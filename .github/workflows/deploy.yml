@@ -52,7 +52,7 @@ jobs:
       - name: Deploy via rsync
         run: |
           rsync -avz --delete \
-            -e "ssh -p ${{ secrets.VPS_PORT || '22' }} -i ~/.ssh/id_ed25519" \
+            -e "ssh -p ${{ secrets.VPS_PORT || '22' }} -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" \
             dist/ \
             ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_PATH }}/
 
