@@ -6,6 +6,10 @@ interface Props {
     description?: string;
 }
 const { title, description = 'Real compiled languages, taught with maximum cat energy.' } = Astro.props;
+
+const SITE_URL = 'https://meowademy.com';
+const SOCIAL_IMAGE = `${SITE_URL}/social.jpg`;
+const canonicalUrl = new URL(Astro.url.pathname, SITE_URL).toString();
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -13,8 +17,30 @@ const { title, description = 'Real compiled languages, taught with maximum cat e
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐱</text></svg>" />
     <title>{title}</title>
+
+    <!-- Open Graph (Facebook, LinkedIn, Discord, Slack, iMessage previews) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Meowademy" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={SOCIAL_IMAGE} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Meowademy ~ Real compiled languages, taught with maximum cat energy." />
+
+    <!-- Twitter / X (large image card) -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={SOCIAL_IMAGE} />
+    <meta name="twitter:image:alt" content="Meowademy ~ Real compiled languages, taught with maximum cat energy." />
+
+    <!-- Theme color (mobile address bar) -->
+    <meta name="theme-color" content="#0a0014" />
 </head>
 <body>
     <header class="site-header">
