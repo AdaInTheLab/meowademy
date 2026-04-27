@@ -1,0 +1,102 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+
+const lastUpdated = '2026-04-27';
+---
+<MainLayout title="Privacy ~ Meowademy" description="What Meowademy does and doesn't collect.">
+    <article class="legal container">
+        <h1>Privacy</h1>
+        <p class="dim">Last updated {lastUpdated}</p>
+
+        <p>
+            Meowademy is a free, no-account learning site. We try to collect as
+            little as possible. Here is the full list.
+        </p>
+
+        <h2>What we collect</h2>
+        <ul>
+            <li>
+                <strong>Anonymous page views</strong> via self-hosted
+                <a href="https://matomo.org/" target="_blank" rel="noopener">Matomo</a>
+                at <code>analytics.kitsuneden.net</code>. We see: which lessons get
+                visited, browser/OS family, country (not city), and where you came
+                from (referrer). Your IP is anonymized before storage. We do
+                not use tracking cookies. We honor your browser's
+                Do Not Track signal.
+            </li>
+            <li>
+                <strong>Standard web server logs</strong> on the VPS hosting this
+                site (Apache access logs). These contain timestamped IPs,
+                requested URLs, user-agent strings. Rotated and discarded
+                regularly. Used only for debugging and abuse mitigation.
+            </li>
+        </ul>
+
+        <h2>What we do not collect</h2>
+        <ul>
+            <li>Names, emails, accounts, passwords ~ Meowademy has no login</li>
+            <li>Payment info ~ Meowademy is free, no payments are processed</li>
+            <li>Cross-site behavior ~ no Google Analytics, no Facebook pixel, no third-party trackers of any kind</li>
+            <li>Contents of your editor ~ what you type stays in your browser unless you click Run (see below)</li>
+        </ul>
+
+        <h2>What lives in your browser only</h2>
+        <p>
+            Your lesson progress (which lessons you completed, hints used,
+            medals earned) is stored in your browser's <code>localStorage</code>
+            and never leaves your device. We can't see it. Use the
+            <strong>Reset Progress</strong> button in the sidebar to clear it.
+        </p>
+
+        <h2>One third-party: play.rust-lang.org</h2>
+        <p>
+            When you click <strong>Run</strong> on a lesson, the code in your
+            editor is sent to
+            <a href="https://play.rust-lang.org/" target="_blank" rel="noopener">play.rust-lang.org</a>
+            (the official Rust Playground) for compilation and execution.
+            Their
+            <a href="https://github.com/rust-lang/rust-playground/blob/main/PRIVACY.md" target="_blank" rel="noopener">privacy policy</a>
+            governs that interaction. We do not log or store your code on our side.
+        </p>
+
+        <h2>Cookies</h2>
+        <p>
+            Meowademy does not set any cookies. Matomo runs in cookieless mode.
+        </p>
+
+        <h2>Children</h2>
+        <p>
+            Meowademy is suitable for all ages and does not knowingly collect
+            data from anyone, of any age. (Because we don't ask.)
+        </p>
+
+        <h2>Changes</h2>
+        <p>
+            If this policy changes meaningfully, the date at the top updates and
+            the prior version stays in
+            <a href="https://github.com/AdaInTheLab/meowademy/commits/main/src/pages/privacy.astro" target="_blank" rel="noopener">git history</a>.
+        </p>
+
+        <h2>Contact</h2>
+        <p>
+            Questions or data-deletion requests (there is little to delete):
+            <a href="mailto:adainthelab@gmail.com">adainthelab@gmail.com</a> or
+            open an issue on
+            <a href="https://github.com/AdaInTheLab/meowademy/issues" target="_blank" rel="noopener">GitHub</a>.
+        </p>
+    </article>
+</MainLayout>
+
+<style>
+    .legal {
+        max-width: 720px;
+        padding-top: clamp(28px, 4vw, 48px);
+        padding-bottom: clamp(40px, 6vw, 80px);
+        line-height: 1.7;
+    }
+    .legal h1 { margin-bottom: 8px; }
+    .legal h2 { margin-top: 36px; margin-bottom: 8px; font-size: 1rem; }
+    .legal ul { padding-left: 20px; }
+    .legal li { margin-bottom: 8px; }
+    .legal p, .legal li { font-size: 0.95rem; color: var(--text); }
+</style>

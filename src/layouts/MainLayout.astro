@@ -80,6 +80,13 @@ const canonicalUrl = new URL(Astro.url.pathname, SITE_URL).toString();
                 Made with <code>yolo</code> energy and zero regrets ~
                 <a href="https://github.com/AdaInTheLab/lolrust">lolrust</a> on GitHub
             </p>
+            <nav class="site-footer__nav">
+                <a href="/privacy">Privacy</a>
+                <span class="dim">·</span>
+                <a href="/terms">Terms</a>
+                <span class="dim">·</span>
+                <a href="https://github.com/AdaInTheLab/meowademy" target="_blank" rel="noopener">Source</a>
+            </nav>
         </div>
     </footer>
 </body>
@@ -139,4 +146,19 @@ const canonicalUrl = new URL(Astro.url.pathname, SITE_URL).toString();
         text-align: center;
         font-size: 0.85rem;
     }
+    .site-footer__nav {
+        margin-top: 12px;
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        align-items: center;
+        font-family: var(--font-display);
+        font-size: 0.65rem;
+        letter-spacing: 0.05em;
+    }
+    .site-footer__nav a {
+        color: var(--text-muted);
+        text-transform: uppercase;
+    }
+    .site-footer__nav a:hover { color: var(--yellow); }
 </style>
