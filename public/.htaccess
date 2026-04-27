@@ -57,7 +57,7 @@ RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
     # worker-src 'none' + frame-ancestors 'none' + base-uri 'self' close the
     # remaining attacker holes (service workers, iframe phishing, base-href
     # manipulation).
-    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://play.rust-lang.org; img-src 'self' data:; worker-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';"
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://analytics.kitsuneden.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://play.rust-lang.org https://analytics.kitsuneden.net; img-src 'self' data: https://analytics.kitsuneden.net; worker-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';"
 </IfModule>
 
 # --- Cache static assets aggressively (WASM, JS, CSS, fonts) ---
