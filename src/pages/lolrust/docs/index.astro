@@ -1,0 +1,94 @@
+---
+import MainLayout from '../../../layouts/MainLayout.astro';
+import DocIndex from '../../../components/DocIndex.astro';
+import { LOLRUST_VERSION } from '../../../data/lolrust';
+---
+<MainLayout
+    title="The Manual ~ LolRust Docs"
+    description="Real documentation for a real esolang. The cat takes itself seriously."
+>
+    <article class="docs container">
+        <h1>The Manual</h1>
+
+        <p>
+            Welcome. The Book of Loaf is the scripture. These are the rules.
+        </p>
+
+        <p>
+            If you came here from the <a href="/lolrust/lesson-1">lessons</a>,
+            you have already met the cat. These pages are for after the
+            introductions ~ when you want to know what every keyword does,
+            what the borrow checker is actually shouting about, and which
+            decisions in this language are intentional versus simply too
+            late to change.
+        </p>
+
+        <p class="dim">
+            Docs target lolrust <code>{LOLRUST_VERSION}</code>.
+        </p>
+
+        <DocIndex />
+
+        <h2>See Also</h2>
+        <ul>
+            <li>
+                <a href="https://skulk.ai/lore/book-of-loaf/">The Book of Loaf</a>
+                ~ canonical lolrust scripture, written by Sage of the Skulk.
+            </li>
+            <li>
+                <a href="https://github.com/AdaInTheLab/lolrust">The lolrust GitHub repo</a>
+                ~ source, issues, releases.
+            </li>
+        </ul>
+    </article>
+</MainLayout>
+
+<style>
+    .docs {
+        max-width: 72ch;
+        padding-top: 32px;
+        padding-bottom: 64px;
+        line-height: 1.65;
+    }
+    .docs h1 {
+        font-family: var(--font-display);
+        font-size: 1.4rem;
+        color: var(--magenta);
+        text-shadow: 0 0 14px var(--magenta-glow);
+        letter-spacing: 0.04em;
+        margin: 0 0 24px;
+    }
+    .docs h2 {
+        font-family: var(--font-display);
+        font-size: 0.95rem;
+        color: var(--yellow);
+        margin: 40px 0 12px;
+        letter-spacing: 0.03em;
+    }
+    .docs p {
+        margin: 0 0 1em;
+    }
+    .docs a {
+        color: var(--magenta);
+        text-decoration: underline;
+        text-decoration-color: var(--magenta-glow);
+    }
+    .docs a:hover {
+        color: var(--yellow);
+    }
+    .docs code {
+        font-family: var(--font-mono);
+        background: var(--bg-card);
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 0.9em;
+        color: var(--magenta-soft);
+    }
+    .docs ul {
+        margin: 0 0 1em;
+        padding-left: 1.5em;
+    }
+    .docs li {
+        margin-bottom: 0.4em;
+    }
+</style>

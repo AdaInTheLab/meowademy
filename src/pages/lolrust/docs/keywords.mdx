@@ -1,0 +1,146 @@
+---
+layout: ../../../layouts/DocsShell.astro
+title: The Keyword Reference
+description: Every lolrust keyword, mapped to its Rust equivalent. Three columns wide.
+---
+
+import { LOLRUST_VERSION } from '../../../data/lolrust';
+
+# The Keyword Reference
+
+Lolrust ships in two flavors: **Beginner** and **Classic**. Both transpile to identical Rust. Both are valid. Pick whichever vibe fits your day.
+
+The Beginner aliases were added in {LOLRUST_VERSION} for the Meowademy lessons, where reading `make x = 5` is friendlier than reading `i can haz x = 5` to a hooman who has never met a cat. The Classic spellings are the original lolrust and remain fully supported. Mixing them in one file is permitted but the cat will sigh.
+
+Where a row says `~` in a column, that form does not exist. Where a row lists multiple words, both spellings transpile to the same Rust.
+
+## Bindings
+
+| Beginner | Classic | Rust | Why |
+|---|---|---|---|
+| `make` | `i can haz` | `let` | the original |
+| `make wiggly` | `i can haz wiggly` | `let mut` | it wiggles because it can change |
+| ~ | `forever` | `const` | forever and ever |
+| ~ | `stickycat` | `static` | a cat that won't move |
+
+## Control Flow
+
+| Beginner | Classic | Rust | Why |
+|---|---|---|---|
+| `when` | `if ceiling cat sez` | `if` | ceiling cat watches over all |
+| ~ | `or if ceiling cat sez` | `else if` | ceiling cat has more to say |
+| `otherwise` | `or basement cat sez` | `else` | the dark alternative |
+| `do this` | `zoomzoom` | `loop` | so much energy it zooms twice |
+| ~ | `furrever` / `chase` | `for` | cats chase things |
+| ~ | `around` | `in` | chase things *around* |
+| `repeat while` | `prowl` | `while` | a cat on patrol |
+| ~ | `skritch dat` / `sniff` | `match` | cats investigate by sniffing |
+| ~ | `nap` / `flop` | `break` | cat naps, loop stops |
+| ~ | `again` | `continue` | do it again |
+| ~ | `yeet` / `cough up` | `return` | like a hairball, but it's a value |
+
+## Functions and Structures
+
+| Beginner | Classic | Rust | Why |
+|---|---|---|---|
+| ~ | `iz` | `fn` | because everything `iz` something |
+| ~ | `loaf` | `struct` | cats are just loaves |
+| ~ | `pounce` / `teech` | `impl` | teach the loaf new tricks |
+| ~ | `flavurz` | `enum` | different flavors of a thing |
+| ~ | `skillz` | `trait` | what a kitteh can do |
+| ~ | `kinda` | `type` | kinda like a type alias |
+| ~ | `purrive(...)` | `#[derive(...)` | the cat has arrived, with derived traits |
+
+## Modules and Visibility
+
+| Beginner | Classic | Rust | Why |
+|---|---|---|---|
+| ~ | `gimme` | `use` | gimme that module |
+| ~ | `box` | `mod` | cats love boxes |
+| ~ | `everycat` | `pub` | visible to everycat |
+| ~ | `chonk` | `super` | the big cat one level up |
+| ~ | `bigchonk` | `crate` | the biggest chonk, the whole crate |
+
+## Modifiers
+
+| Beginner | Classic | Rust | Why |
+|---|---|---|---|
+| ~ | `wiggly` | `mut` | it wiggles |
+| ~ | `yolo` | `unsafe` | you only live once (cats have 9 tho) |
+| ~ | `lazee` | `async` | will do it later |
+| ~ | `waitforit` | `await` | ...wait for it... |
+| ~ | `yoink` | `move` | YOINK! mine now |
+| ~ | `copycat` | `.clone()` | makes a copy of ur cat |
+| ~ | `pretend iz` | `as` | pretend it's something else |
+| ~ | `but only if` | `where` | conditions apply |
+
+## Self and Path
+
+| Beginner | Classic | Rust | Why |
+|---|---|---|---|
+| ~ | `dis` | `self` | dis right here |
+| ~ | `Dis` | `Self` | Dis type right here |
+
+## Macros
+
+| Beginner | Classic | Rust | Why |
+|---|---|---|---|
+| `say` / `bigsay` | `meow!` | `println!` | cats meow, programs print |
+| `yell` | `hisss!` | `eprintln!` | angry output |
+| ~ | `ohno!` | `panic!` | oh no |
+
+The Beginner macros (`say`, `bigsay`, `yell`) work without the `!` because they're not technically macros at the lolrust level ~ they get rewritten directly to `println!` and `eprintln!` during transpile. The Classic forms (`meow!`, `hisss!`, `ohno!`) keep the `!` for visual continuity with their Rust counterparts.
+
+## Types
+
+| LolRust | Rust | Why |
+|---|---|---|
+| `Yarn` | `String` | cats love yarn |
+| `Pile` | `Vec` | a pile of things |
+| `Cardboard` | `Box` | cats WILL sit in the cardboard |
+| `MaybeCheezburgr` | `Option` | maybe there's a cheeseburger, maybe not |
+| `Tryz` | `Result` | try and see what happens |
+
+Types do not have Beginner aliases. The cat felt that `Yarn` was already simple enough.
+
+## Type Variants
+
+| LolRust | Rust | Why |
+|---|---|---|
+| `Has(value)` | `Some(value)` | it has the thing |
+| `EmptyBowl` | `None` | the bowl is empty :( |
+| `Purrfect(value)` | `Ok(value)` | purrfect, no errors |
+| `Hairball(error)` | `Err(error)` | coughed up a hairball |
+
+## Booleans
+
+| LolRust | Rust |
+|---|---|
+| `yus` | `true` |
+| `nope` | `false` |
+
+## Word-Boundary Safety
+
+The transpiler respects word boundaries, so the following do not get mangled.
+
+`dismiss()` stays as `dismiss()`. The keyword `dis` is hiding inside `dismiss`, but the boundary check refuses to replace it.
+
+`wizard` stays as `wizard`. The keyword `wiggly` is not a prefix of `wizard`, and even if it were, the trailing word character would block the substitution.
+
+`iz_chonky` stays as `iz_chonky`. Underscores count as word characters, so the keywords `iz` and `chonk` cannot leak into a snake_case identifier.
+
+If you discover a case where the transpiler eats part of a name it should not, [file an issue](https://github.com/AdaInTheLab/lolrust/issues). The cat will pretend to investigate.
+
+## Longest-Match-First
+
+Multi-word keywords are matched longest-first, which is why `i can haz wiggly x = 5;` correctly becomes `let mut x = 5;` rather than the syntactically broken `let wiggly x = 5;`. You do not need to think about this. The cat already thought about it.
+
+## Beginner Alias Caveat
+
+The Beginner aliases trade native lolcat feel for clarity. If you want your code to read as authentic lolcat, prefer the Classic spellings. If you want your code to read as a tutorial, prefer the Beginner spellings. If you want your code to read as a tutorial that becomes lolcat halfway through, mix freely. The cat does not care, although it has opinions.
+
+## Versions
+
+This reference is current as of **lolrust {LOLRUST_VERSION}**. The Beginner aliases were introduced in 0.2.0; everything in the Classic column was already present in 0.1.x.
+
+If you are reading this from a future where lolrust has grown additional keywords, the canonical source is [`src/keywords.rs`](https://github.com/AdaInTheLab/lolrust/blob/main/src/keywords.rs) in the repo. That file is sorted longest-first for the longest-match logic above and is the authority. This page is its translation for hoomans.

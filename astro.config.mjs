@@ -1,4 +1,5 @@
 import { defineConfig } from 'astro/config';
+import mdx from '@astrojs/mdx';
 
 export default defineConfig({
     site: 'http://localhost:4321',
@@ -11,4 +12,5 @@ export default defineConfig({
             fs: { allow: ['..'] },
         },
     },
+    integrations: [mdx()],
 });
