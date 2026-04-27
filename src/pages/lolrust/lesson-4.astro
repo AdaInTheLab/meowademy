@@ -1,0 +1,52 @@
+---
+import LessonShell from '../../layouts/LessonShell.astro';
+---
+<LessonShell
+    course="LolRust"
+    number={4}
+    name="When / Otherwise"
+    objective="Make a decision. If hunger is over 70, the cat screams. Otherwise, it's chill."
+    keywords={[
+        { code: 'when', note: 'if the condition is true' },
+        { code: 'otherwise', note: 'else, do this instead' },
+        { code: '> < ==', note: 'compare values' },
+    ]}
+    initial={`iz main() {
+    make wiggly hunger = 80;
+
+    meow!("Current hunger level: {}%", hunger);
+
+    // TODO: if hunger > 70, meow!("I AM STARVING!!! FEED ME NOW HOOMAN!!");
+    //                       and meow!("meow meow meow meow meow");
+    //       otherwise, meow!("I am still full... maybe later.");
+
+    meow!("End of cat status report.");
+}`}
+    checks={[
+        { label: 'has if', pattern: '\\bif\\b' },
+        { label: 'has else', pattern: '\\belse\\b' },
+        { label: 'no leftover when', pattern: '\\bwhen\\b', negate: true },
+        { label: 'no leftover otherwise', pattern: '\\botherwise\\b', negate: true },
+    ]}
+    prev={{ href: '/lolrust/lesson-3', label: 'lesson 3' }}
+    next={{ href: '/lolrust/lesson-5', label: 'lesson 5' }}
+    hints={[
+        'The shape is `when condition { ... } otherwise { ... }`.',
+        'Compare with `>`. So `when hunger > 70 { ... }`.',
+        'Each branch needs its own `meow!(...)` call inside the curly braces.',
+    ]}
+    solution={`iz main() {
+    make wiggly hunger = 80;
+
+    meow!("Current hunger level: {}%", hunger);
+
+    when hunger > 70 {
+        meow!("I AM STARVING!!! FEED ME NOW HOOMAN!!");
+        meow!("meow meow meow meow meow");
+    } otherwise {
+        meow!("I am still full... maybe later.");
+    }
+
+    meow!("End of cat status report.");
+}`}
+/>

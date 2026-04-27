@@ -1,0 +1,44 @@
+---
+import LessonShell from '../../layouts/LessonShell.astro';
+---
+<LessonShell
+    course="LolRust"
+    number={1}
+    name="Your First Meow"
+    objective="Make the cat say something. Anything. The litter box is yours."
+    keywords={[
+        { code: 'iz main()', note: 'every program starts here' },
+        { code: 'meow!(...)', note: 'make the cat speak' },
+        { code: '"..."', note: 'wrap text in quotes' },
+        { code: ';', note: 'end every statement' },
+    ]}
+    initial={`iz main() {
+    // TODO: make the cat say something
+    // hint: meow!("...your message...");
+
+}`}
+    checks={[
+        { label: 'has fn main', pattern: '\\bfn\\s+main\\s*\\(' },
+        { label: 'has println!', pattern: '\\bprintln!\\s*\\(' },
+        { label: 'no leftover meow keywords', pattern: '\\b(iz|meow!)\\b', negate: true },
+    ]}
+    next={{ href: '/lolrust/lesson-2', label: 'lesson 2' }}
+    hints={[
+        'Every lolrust program needs an entry point. Type `iz main()` followed by curly braces.',
+        'Inside the braces, use `meow!` (with the `!`) and put your message inside `"..."` quotes.',
+        'Don\'t forget the semicolon `;` at the end of the line.',
+    ]}
+    solution={`iz main() {
+    meow!("hai hooman! i am learning lolrust!");
+}`}
+>
+    <div slot="extras">
+        <h3>How the checker works</h3>
+        <p class="dim">
+            The transpiler runs in your browser via WebAssembly. Hit
+            <strong>Run</strong> and you see the actual Rust your code became.
+            The verdict checks structural properties of that Rust ~ it's not
+            faking success.
+        </p>
+    </div>
+</LessonShell>

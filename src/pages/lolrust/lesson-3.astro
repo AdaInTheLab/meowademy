@@ -1,0 +1,49 @@
+---
+import LessonShell from '../../layouts/LessonShell.astro';
+---
+<LessonShell
+    course="LolRust"
+    number={3}
+    name="Wiggly Variables"
+    objective="Mutate a variable. Take the zoomies counter and make it bigger. Twice."
+    keywords={[
+        { code: 'make wiggly', note: 'a variable you can change (let mut)' },
+        { code: '=', note: 'reassign the value' },
+        { code: '+ - * /', note: 'do math like normal' },
+    ]}
+    initial={`iz main() {
+    make wiggly zoomies = 100;
+
+    meow!("Starting zoomies: {}", zoomies);
+
+    // TODO 1: increment zoomies by 500
+    // TODO 2: then double zoomies
+
+    meow!("After zoomies training: {}", zoomies);
+    meow!("I AM UNSTOPPABLE!!!");
+}`}
+    checks={[
+        { label: 'has let mut', pattern: '\\blet\\s+mut\\s+\\w+' },
+        { label: 'has reassignment', pattern: '\\bzoomies\\s*=\\s*zoomies' },
+        { label: 'transpiled meow!', pattern: '\\bprintln!' },
+        { label: 'no leftover make wiggly', pattern: '\\bmake\\s+wiggly\\b', negate: true },
+    ]}
+    prev={{ href: '/lolrust/lesson-2', label: 'lesson 2' }}
+    next={{ href: '/lolrust/lesson-4', label: 'lesson 4' }}
+    hints={[
+        'A wiggly variable can be reassigned. Just use `=` again.',
+        '`zoomies = zoomies + 500;` adds 500 to whatever zoomies currently is.',
+        '`zoomies = zoomies * 2;` doubles it. Order matters ~ add first, then multiply.',
+    ]}
+    solution={`iz main() {
+    make wiggly zoomies = 100;
+
+    meow!("Starting zoomies: {}", zoomies);
+
+    zoomies = zoomies + 500;
+    zoomies = zoomies * 2;
+
+    meow!("After zoomies training: {}", zoomies);
+    meow!("I AM UNSTOPPABLE!!!");
+}`}
+/>

@@ -1,0 +1,853 @@
+---
+interface Check {
+    label: string;
+    /** Regex string the transpiled Rust must match (or NOT match if `negate`). */
+    pattern: string;
+    flags?: string;
+    negate?: boolean;
+}
+interface Props {
+    /** Initial code in the textarea */
+    initial: string;
+    /** Per-lesson checks ~ the No Touchie Checker rules */
+    checks?: Check[];
+    /** Smaller variant for the landing-page hero */
+    compact?: boolean;
+    /** DOM id suffix so multiple editors can coexist on a page */
+    id?: string;
+    /** When all checks pass, show this celebratory award. */
+    award?: string | null;
+    /** Lesson number for progress tracking. Null on hero/sandbox editors. */
+    lessonNumber?: number | null;
+    /** Per-lesson hints (1-3 typical). Hidden until user clicks Hint. */
+    hints?: string[];
+    /** Solution code. Hidden until user clicks "Show Solution". */
+    solution?: string | null;
+}
+const {
+    initial,
+    checks = [
+        { label: 'has fn main', pattern: '\\bfn\\s+main\\s*\\(' },
+        { label: 'has println!', pattern: '\\bprintln!\\s*\\(' },
+        // Note: don't include 'i can haz' here ~ users legitimately use it
+        // inside string literals (it's the language's brand phrase).
+        { label: 'no leftover meow keywords', pattern: '\\b(iz|meow!)\\b', negate: true },
+    ],
+    compact = false,
+    id = 'main',
+    award = null,
+    lessonNumber = null,
+    hints = [],
+    solution = null,
+} = Astro.props;
+
+// Base64-encode hints/solution so they're not in plain view-source.
+// Trivially decodable but not lying around as readable text in the DOM.
+const encodedHints = hints.map(h => Buffer.from(h, 'utf8').toString('base64'));
+const encodedSolution = solution ? Buffer.from(solution, 'utf8').toString('base64') : null;
+---
+<div class={`editor ${compact ? 'editor--compact' : ''}`} data-editor-id={id}>
+    <div class="editor__row">
+        <h3 class="editor__label">YOUR .MEOW CODE</h3>
+        <span class="chip" data-status>loading transpiler…</span>
+    </div>
+    <div class="code-mount" data-cm-mount></div>
+    <textarea data-code spellcheck="false" aria-hidden="true">{initial}</textarea>
+
+    <div class="editor__actions">
+        <button type="button" class="btn-run" data-run disabled>▶ RUN CODE</button>
+        {hints.length > 0 && (
+            <button type="button" class="btn-ghost btn-hint" data-hint-btn>
+                🐾 HINT (<span data-hint-used>0</span>/{hints.length})
+            </button>
+        )}
+        {encodedSolution && (
+            <button type="button" class="btn-ghost btn-solution" data-solution-btn>
+                💀 SHOW SOLUTION
+            </button>
+        )}
+    </div>
+
+    {hints.length > 0 && (
+        <div class="hints-area" data-hints-area hidden>
+            <h3 class="editor__label">HINTS</h3>
+            <ol class="hints-list" data-hints-list>
+                {encodedHints.map((h, i) => (
+                    <li class="hint" data-hint-index={i} data-hint-encoded={h} hidden>
+                        <span class="hint__num">{i + 1}.</span>
+                        <span class="hint__text" data-hint-text></span>
+                    </li>
+                ))}
+            </ol>
+        </div>
+    )}
+
+    <div class="output-row">
+        <div class="output-row__head">
+            <h3 class="editor__label">OUTPUT</h3>
+            <span class="output-row__sub dim" data-output-sub>real <code>rustc</code> via play.rust-lang.org</span>
+        </div>
+        <pre data-output class="output-pane">(hit run to see output)</pre>
+    </div>
+
+    <div class="editor__output">
+        <div>
+            <h3 class="editor__label">TRANSPILED RUST</h3>
+            <pre data-transpiled>(waiting for ur meow)</pre>
+        </div>
+        <div>
+            <h3 class="editor__label">NO TOUCHIE CHECKER</h3>
+            <pre data-verdict>(no verdict yet)</pre>
+            <div class="medal-banner" data-medal-banner hidden>
+                <span class="medal-banner__icon" data-medal-icon>🥇</span>
+                <span class="medal-banner__text" data-medal-text>GOLD MEDAL</span>
+            </div>
+            {award && (
+                <div class="award" data-award hidden>
+                    <div class="award__loaf">/\_/\<br />( ^.^ )<br /> &gt; ^ &lt;</div>
+                    <div class="award__title">🏆 GOLDEN LOAF AWARDED 🏆</div>
+                    <div class="award__sub">{award}</div>
+                    <div class="award__tag">You completed the LolRust course.</div>
+                </div>
+            )}
+        </div>
+    </div>
+
+    {encodedSolution && (
+        <div class="solution-data" data-solution-encoded={encodedSolution} hidden></div>
+    )}
+</div>
+
+<script is:inline define:vars={{ checks, id, lessonNumber }}>
+    (() => {
+        const root = document.querySelector(`[data-editor-id="${id}"]`);
+        if (!root) return;
+        const codeEl = root.querySelector('[data-code]');
+        const btn = root.querySelector('[data-run]');
+        const status = root.querySelector('[data-status]');
+        const transpiledEl = root.querySelector('[data-transpiled]');
+        const verdictEl = root.querySelector('[data-verdict]');
+        const awardEl = root.querySelector('[data-award]');
+        const hintBtn = root.querySelector('[data-hint-btn]');
+        const hintsArea = root.querySelector('[data-hints-area]');
+        const hintCountEl = root.querySelector('[data-hint-used]');
+        const solutionBtn = root.querySelector('[data-solution-btn]');
+        const solutionDataEl = root.querySelector('[data-solution-encoded]');
+        const medalBanner = root.querySelector('[data-medal-banner]');
+        const medalIconEl = root.querySelector('[data-medal-icon]');
+        const medalTextEl = root.querySelector('[data-medal-text]');
+        const outputEl = root.querySelector('[data-output]');
+        const outputSubEl = root.querySelector('[data-output-sub]');
+
+        const KEY = 'meowademy:lolrust:v1';
+        const EVT = 'meowademy:progress';
+        const hasLesson = lessonNumber !== null && lessonNumber !== '';
+        const lessonN = hasLesson ? Number(lessonNumber) : null;
+
+        const autoresize = () => {
+            codeEl.style.height = 'auto';
+            codeEl.style.height = Math.max(160, codeEl.scrollHeight + 4) + 'px';
+        };
+        codeEl.addEventListener('input', autoresize);
+        requestAnimationFrame(autoresize);
+
+        let transpile = null;
+        (async () => {
+            try {
+                const mod = await import('/pkg/lolrust.js');
+                await mod.default();
+                transpile = mod.transpile_meow;
+                status.textContent = 'transpiler ready 🐾';
+                status.classList.add('chip--success');
+                btn.disabled = false;
+            } catch (e) {
+                status.textContent = 'wasm failed';
+                status.classList.add('chip--fail');
+                verdictEl.textContent =
+                    'OH NOES: could not load the transpiler.\n' +
+                    'Is this served over http (not file://)?\n\n' +
+                    e.message;
+            }
+        })();
+
+        const compiled = checks.map(c => ({ ...c, re: new RegExp(c.pattern, c.flags || '') }));
+
+        // ─── progress helpers (inlined; format must match src/scripts/progress.js) ───
+        function readProgress() {
+            try { return JSON.parse(localStorage.getItem(KEY) || '{}'); }
+            catch { return {}; }
+        }
+        function ensureLesson(p, n) {
+            if (!p[n]) p[n] = { hintsUsed: 0, solutionRevealed: false };
+            if (typeof p[n].hintsUsed !== 'number') p[n].hintsUsed = 0;
+            if (typeof p[n].solutionRevealed !== 'boolean') p[n].solutionRevealed = false;
+            return p[n];
+        }
+        function emit(p, justCompleted, extra) {
+            window.dispatchEvent(new CustomEvent(EVT, {
+                detail: { progress: p, justCompleted: justCompleted ?? null, ...(extra || {}) }
+            }));
+        }
+        function markComplete(n) {
+            const p = readProgress();
+            const lesson = ensureLesson(p, n);
+            const wasNew = !lesson.completed;
+            lesson.completed = true;
+            lesson.completedAt = lesson.completedAt || Date.now();
+            if (wasNew) {
+                if (lesson.solutionRevealed) lesson.medal = 'bronze';
+                else if (lesson.hintsUsed > 0) lesson.medal = 'silver';
+                else lesson.medal = 'gold';
+            }
+            localStorage.setItem(KEY, JSON.stringify(p));
+            if (wasNew) emit(p, n, { medal: lesson.medal });
+            return lesson.medal;
+        }
+        function markHint(n) {
+            const p = readProgress();
+            const lesson = ensureLesson(p, n);
+            lesson.hintsUsed += 1;
+            localStorage.setItem(KEY, JSON.stringify(p));
+            emit(p);
+            return lesson.hintsUsed;
+        }
+        function markSolutionRevealed(n) {
+            const p = readProgress();
+            const lesson = ensureLesson(p, n);
+            lesson.solutionRevealed = true;
+            localStorage.setItem(KEY, JSON.stringify(p));
+            emit(p);
+        }
+        function getLesson(n) {
+            const p = readProgress();
+            return p[n] || null;
+        }
+
+        // ─── hints ───
+        function revealHint(index) {
+            const li = root.querySelector(`[data-hint-index="${index}"]`);
+            if (!li || !li.hasAttribute('hidden')) return false;
+            const encoded = li.getAttribute('data-hint-encoded') || '';
+            const text = atob(encoded);
+            const textEl = li.querySelector('[data-hint-text]');
+            if (textEl) textEl.textContent = text;
+            li.removeAttribute('hidden');
+            if (hintsArea) hintsArea.removeAttribute('hidden');
+            return true;
+        }
+        function totalHints() {
+            return root.querySelectorAll('[data-hint-index]').length;
+        }
+        function refreshHintButton(usedCount) {
+            if (!hintBtn || !hintCountEl) return;
+            hintCountEl.textContent = String(usedCount);
+            if (usedCount >= totalHints()) {
+                hintBtn.setAttribute('disabled', '');
+                hintBtn.textContent = '🐾 NO MORE HINTS';
+            }
+        }
+        if (hintBtn) {
+            hintBtn.addEventListener('click', () => {
+                if (!hasLesson) return;
+                const lesson = getLesson(lessonN) || { hintsUsed: 0 };
+                const next = lesson.hintsUsed;
+                if (next >= totalHints()) return;
+                if (revealHint(next)) {
+                    const usedNow = markHint(lessonN);
+                    refreshHintButton(usedNow);
+                }
+            });
+        }
+
+        // ─── solution ───
+        if (solutionBtn && solutionDataEl) {
+            solutionBtn.addEventListener('click', () => {
+                if (!hasLesson) return;
+                const ok = confirm(
+                    'Reveal the solution?\n\n' +
+                    'This will replace your code with the answer AND lock your medal at Bronze 🥉 for this lesson. Cannot be undone.'
+                );
+                if (!ok) return;
+                const encoded = solutionDataEl.getAttribute('data-solution-encoded') || '';
+                const code = atob(encoded);
+                codeEl.value = code;
+                autoresize();
+                // Notify CodeMirror (if mounted) to sync the new value
+                codeEl.dispatchEvent(new CustomEvent('cm:set', { detail: code, bubbles: true }));
+                markSolutionRevealed(lessonN);
+                solutionBtn.setAttribute('disabled', '');
+                solutionBtn.textContent = '💀 SOLUTION REVEALED';
+            });
+        }
+
+        // Restore on page load: if hints were already used, re-reveal them.
+        if (hasLesson) {
+            const saved = getLesson(lessonN);
+            if (saved) {
+                const used = saved.hintsUsed || 0;
+                for (let i = 0; i < used && i < totalHints(); i++) revealHint(i);
+                refreshHintButton(used);
+                if (saved.solutionRevealed && solutionBtn) {
+                    solutionBtn.setAttribute('disabled', '');
+                    solutionBtn.textContent = '💀 SOLUTION REVEALED';
+                }
+                if (saved.medal && medalBanner) {
+                    showMedal(saved.medal);
+                }
+            }
+        }
+
+        function showMedal(medal) {
+            if (!medalBanner) return;
+            const labels = { gold: '🥇 GOLD MEDAL', silver: '🥈 SILVER MEDAL', bronze: '🥉 BRONZE MEDAL' };
+            const icons = { gold: '🥇', silver: '🥈', bronze: '🥉' };
+            if (medalIconEl) medalIconEl.textContent = icons[medal] || '🐾';
+            if (medalTextEl) medalTextEl.textContent = labels[medal] || 'COMPLETED';
+            medalBanner.removeAttribute('hidden');
+            medalBanner.setAttribute('data-medal-tier', medal);
+        }
+
+        function setOutputState(state, text) {
+            if (!outputEl) return;
+            outputEl.classList.remove('is-running', 'is-success', 'is-error', 'is-empty');
+            if (state) outputEl.classList.add('is-' + state);
+            outputEl.textContent = text;
+        }
+
+        // Runs the transpiled Rust on play.rust-lang.org. Returns null on
+        // network failure. Body shape per the official Playground API.
+        async function executeRust(code) {
+            const res = await fetch('https://play.rust-lang.org/execute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    channel: 'stable',
+                    mode: 'debug',
+                    edition: '2021',
+                    crateType: 'bin',
+                    tests: false,
+                    code,
+                    backtrace: false,
+                }),
+            });
+            if (!res.ok) throw new Error('play.rust-lang.org returned HTTP ' + res.status);
+            return res.json();
+        }
+
+        // Extract just the `error[...]: message` lines from cargo's noisy output.
+        function extractRustcErrors(stderr) {
+            const errors = [];
+            for (const line of (stderr || '').split('\n')) {
+                const m = line.match(/^error(?:\[[^\]]+\])?:\s*(.+)$/);
+                if (m) errors.push(m[1]);
+            }
+            return errors;
+        }
+
+        // Cat-flavor common rustc messages. Mirrors lolrust's explain.rs vibe.
+        function lolcatify(msg) {
+            return msg
+                .replace(/cannot find value `([^`]+)` in this scope/g, "WHERE IZ IT?? `$1` iz not declared anywhere")
+                .replace(/cannot find function `([^`]+)`/g, "WHERE IZ IT?? `$1` iz not a function i know about")
+                .replace(/cannot find type `([^`]+)`/g, "WHERE IZ IT?? `$1` iz not a type i know about")
+                .replace(/mismatched types/g, "WRONG FLAVOR! mismatched types")
+                .replace(/cannot borrow `([^`]+)` as mutable/g, "NO TOUCHIE! cannot grab `$1` to change it")
+                .replace(/cannot move out of/g, "HEY! dat iz not urs to yoink from")
+                .replace(/value (?:used|borrowed) here after move/g, "u tried to use it AFTER it got yoinked! D:")
+                .replace(/no method named `([^`]+)`/g, "dis kitteh dont know how to `$1`")
+                .replace(/the trait bound (.+?) is not satisfied/g, "dis kitteh dont haz da skillz: $1")
+                .replace(/cannot assign twice to immutable variable/g, "NO! dat iz not wiggly! u cant change it")
+                .replace(/expected (.+?), found (.+)/g, "i wanted $1 but u gave me $2")
+                .replace(/missing field `([^`]+)`/g, "u forgot to put `$1` in da loaf")
+                .replace(/no field `([^`]+)`/g, "dat loaf dont haz a `$1`")
+                .replace(/expected expression/g, "expected an expression but didnt find one")
+                .replace(/unused variable: `([^`]+)`/g, "u made `$1` but never played with it")
+                .replace(/this function takes (\d+) arguments? but (\d+) (?:was|were) supplied/g, "dis function wants $1 toy(s) but u gave it $2");
+        }
+
+        let inflightExecution = 0;
+        async function runOnPlayground(rust) {
+            if (!outputEl) return;
+            const myToken = ++inflightExecution;
+            setOutputState('running', '⏳ compiling and running on play.rust-lang.org…');
+            try {
+                const result = await executeRust(rust);
+                if (myToken !== inflightExecution) return; // a newer run superseded us
+                if (result.success) {
+                    const stdout = (result.stdout || '').trimEnd();
+                    if (stdout.length === 0) {
+                        setOutputState('empty', '(your code ran successfully but printed nothing)');
+                    } else {
+                        setOutputState('success', stdout);
+                    }
+                } else {
+                    const errors = extractRustcErrors(result.stderr);
+                    const body = errors.length > 0
+                        ? errors.map(e => '• ' + lolcatify(e)).join('\n')
+                        : '(no specific error message ~ try checking your syntax)';
+                    setOutputState('error', '😿 rustc says nah:\n\n' + body);
+                }
+            } catch (e) {
+                if (myToken !== inflightExecution) return;
+                setOutputState('error',
+                    'OH NOES: could not reach play.rust-lang.org\n\n' +
+                    'Are you offline? Or is play.rust-lang.org down?\n\n' +
+                    'Underlying error: ' + e.message
+                );
+            }
+        }
+
+        const run = () => {
+            if (!transpile) return;
+            const src = codeEl.value;
+            let rust;
+            try {
+                rust = transpile(src);
+            } catch (e) {
+                transpiledEl.textContent = '';
+                transpiledEl.classList.remove('success-border');
+                transpiledEl.classList.add('fail-border');
+                verdictEl.classList.remove('success-border');
+                verdictEl.classList.add('fail-border');
+                verdictEl.textContent = 'OH NOES: transpiler crashed.\n' + e.message;
+                return;
+            }
+            transpiledEl.textContent = rust;
+
+            const results = compiled.map(c => {
+                const matched = c.re.test(rust);
+                const pass = c.negate ? !matched : matched;
+                return { label: c.label, pass };
+            });
+            const allPass = results.every(r => r.pass);
+            const lines = results.map(r => (r.pass ? '✅ ' : '❌ ') + r.label).join('\n');
+            const verdict = allPass
+                ? '\n\n🐾 The No Touchie Checker is purring.'
+                : '\n\n😾 The No Touchie Checker is not impressed. Try again kitteh.';
+
+            transpiledEl.classList.toggle('success-border', allPass);
+            transpiledEl.classList.toggle('fail-border', !allPass);
+            verdictEl.classList.toggle('success-border', allPass);
+            verdictEl.classList.toggle('fail-border', !allPass);
+            verdictEl.textContent = lines + verdict;
+
+            if (awardEl) {
+                if (allPass) {
+                    awardEl.removeAttribute('hidden');
+                    awardEl.classList.add('award--shown');
+                } else {
+                    awardEl.setAttribute('hidden', '');
+                    awardEl.classList.remove('award--shown');
+                }
+            }
+
+            if (allPass && hasLesson) {
+                const medal = markComplete(lessonN);
+                if (medal) showMedal(medal);
+            }
+
+            // Kick off real execution on play.rust-lang.org. Fire-and-forget;
+            // the transpile + checker results are already displayed.
+            runOnPlayground(rust);
+        };
+
+        btn.addEventListener('click', run);
+        codeEl.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); run(); }
+        });
+    })();
+</script>
+
+<script>
+    // Hoisted (Vite-bundled) script: enhances each editor's textarea with
+    // CodeMirror 6 ~ syntax highlighting, line numbers, tab indent, history.
+    // The textarea remains the source of truth for the inline editor script
+    // (which can't import npm packages because it's `is:inline` for the WASM).
+    import { EditorState } from '@codemirror/state';
+    import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view';
+    import { history, defaultKeymap, historyKeymap, indentWithTab } from '@codemirror/commands';
+    import { syntaxHighlighting, HighlightStyle, indentOnInput, bracketMatching } from '@codemirror/language';
+    import { tags as t } from '@lezer/highlight';
+    import { lolrustLanguage } from '../scripts/lolrust-mode.js';
+
+    // Magenta-on-deep-purple highlight style. Pairs with the site palette.
+    const lolrustHighlight = HighlightStyle.define([
+        { tag: t.keyword, color: '#ff66ff', fontWeight: '500' },
+        { tag: t.macroName, color: '#ff99ff' },
+        { tag: t.typeName, color: '#ffcc00' },
+        { tag: t.string, color: '#88ff88' },
+        { tag: t.character, color: '#88ff88' },
+        { tag: t.comment, color: '#6b5577', fontStyle: 'italic' },
+        { tag: t.number, color: '#88ddff' },
+        { tag: t.meta, color: '#ffaa66' }, // lifetimes 'a
+        { tag: t.function(t.variableName), color: '#ffe066' },
+    ]);
+
+    const lolrustTheme = EditorView.theme({
+        '&': {
+            backgroundColor: '#0a0014',
+            color: '#ffe6f5',
+            border: '2px solid #ff00ff',
+            borderRadius: '12px',
+            fontSize: '0.95rem',
+        },
+        '&.cm-focused': {
+            outline: 'none',
+            borderColor: '#ffcc00',
+        },
+        '.cm-content': {
+            fontFamily: 'JetBrains Mono, SF Mono, Menlo, Consolas, monospace',
+            padding: '14px 0',
+            caretColor: '#ffcc00',
+        },
+        '.cm-gutters': {
+            backgroundColor: '#110022',
+            color: '#6b5577',
+            border: 'none',
+            borderRight: '1px solid rgba(255, 0, 255, 0.2)',
+            paddingRight: '4px',
+        },
+        '.cm-activeLineGutter': {
+            backgroundColor: 'rgba(255, 0, 255, 0.08)',
+            color: '#ff99ff',
+        },
+        '.cm-activeLine': {
+            backgroundColor: 'rgba(255, 0, 255, 0.05)',
+        },
+        '.cm-cursor, .cm-dropCursor': { borderLeftColor: '#ffcc00' },
+        '.cm-selectionBackground, ::selection': { backgroundColor: 'rgba(255, 0, 255, 0.25)' },
+        '&.cm-focused .cm-selectionBackground': { backgroundColor: 'rgba(255, 0, 255, 0.35)' },
+        '.cm-scroller': { lineHeight: '1.55' },
+    }, { dark: true });
+
+    function mountEditor(root) {
+        const mount = root.querySelector('[data-cm-mount]');
+        const textarea = root.querySelector('[data-code]');
+        if (!mount || !textarea) return;
+        if (mount.dataset.cmMounted === 'true') return; // idempotent
+        mount.dataset.cmMounted = 'true';
+
+        const initialDoc = textarea.value;
+
+        const view = new EditorView({
+            parent: mount,
+            state: EditorState.create({
+                doc: initialDoc,
+                extensions: [
+                    lineNumbers(),
+                    highlightActiveLine(),
+                    highlightActiveLineGutter(),
+                    history(),
+                    indentOnInput(),
+                    bracketMatching(),
+                    lolrustLanguage,
+                    syntaxHighlighting(lolrustHighlight),
+                    lolrustTheme,
+                    keymap.of([indentWithTab, ...defaultKeymap, ...historyKeymap]),
+                    EditorView.updateListener.of((update) => {
+                        if (update.docChanged) {
+                            textarea.value = update.state.doc.toString();
+                        }
+                    }),
+                ],
+            }),
+        });
+
+        // Hide the textarea ~ CodeMirror is now the visible editor
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        textarea.style.width = '1px';
+        textarea.style.height = '1px';
+        textarea.style.opacity = '0';
+        textarea.tabIndex = -1;
+
+        // When something programmatically sets the textarea (e.g., the
+        // "Show Solution" button), sync that into CodeMirror.
+        textarea.addEventListener('cm:set', (e) => {
+            const next = e.detail ?? textarea.value;
+            view.dispatch({
+                changes: { from: 0, to: view.state.doc.length, insert: next },
+            });
+        });
+
+        // Cmd/Ctrl+Enter triggers the Run button
+        view.contentDOM.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                e.preventDefault();
+                root.querySelector('[data-run]')?.click();
+            }
+        });
+    }
+
+    document.querySelectorAll('[data-editor-id]').forEach(mountEditor);
+</script>
+
+<style>
+    .editor {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+    .editor--compact textarea { min-height: 110px; }
+    .editor__row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+    .editor__label {
+        margin: 0;
+        font-size: 0.65rem;
+        color: var(--yellow);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+    .editor button {
+        align-self: flex-start;
+    }
+    .code-mount {
+        min-height: 160px;
+        max-height: 480px;
+        overflow: hidden;
+        border-radius: 12px;
+    }
+    .code-mount .cm-editor { height: 100%; min-height: 160px; max-height: 480px; }
+    .code-mount .cm-scroller { overflow: auto; }
+    .editor--compact .code-mount { min-height: 120px; }
+    .editor--compact .code-mount .cm-editor { min-height: 120px; }
+    .editor__actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .editor__actions .btn-run {
+        font-family: var(--font-display);
+        background: var(--magenta);
+        color: white;
+        border: none;
+        border-radius: 999px;
+        padding: 14px 28px;
+        font-size: 1rem;
+        cursor: pointer;
+        box-shadow: 0 0 0 0 var(--magenta-glow);
+        transition: transform 0.15s ease, box-shadow 0.2s ease;
+        letter-spacing: 0.05em;
+    }
+    .editor__actions .btn-run:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 32px var(--magenta-glow);
+    }
+    .editor__actions .btn-run:disabled { opacity: 0.4; cursor: wait; }
+    .editor__actions .btn-ghost {
+        font-family: var(--font-display);
+        background: transparent;
+        border: 2px solid;
+        border-radius: 999px;
+        padding: 12px 22px;
+        font-size: 0.7rem;
+        cursor: pointer;
+        letter-spacing: 0.05em;
+        box-shadow: none;
+    }
+    .editor__actions .btn-hint {
+        color: var(--yellow);
+        border-color: var(--yellow);
+    }
+    .editor__actions .btn-hint:hover:not(:disabled) {
+        background: var(--yellow);
+        color: var(--bg-deep);
+    }
+    .editor__actions .btn-solution {
+        color: var(--red);
+        border-color: var(--red);
+    }
+    .editor__actions .btn-solution:hover:not(:disabled) {
+        background: var(--red);
+        color: var(--bg-deep);
+    }
+    .editor__actions button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .hints-area {
+        background: rgba(255, 204, 0, 0.06);
+        border: 2px dashed var(--yellow);
+        border-radius: 12px;
+        padding: 14px 18px;
+    }
+    .hints-list {
+        list-style: none;
+        margin: 8px 0 0;
+        padding: 0;
+    }
+    .hint {
+        display: flex;
+        gap: 12px;
+        padding: 8px 0;
+        font-size: 0.95rem;
+        color: var(--yellow-soft);
+        animation: hint-fade 0.3s ease-out;
+    }
+    .hint__num {
+        color: var(--yellow);
+        font-family: var(--font-display);
+        font-size: 0.75rem;
+        flex-shrink: 0;
+        padding-top: 2px;
+    }
+    @keyframes hint-fade {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .medal-banner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: 16px 20px;
+        margin-top: 14px;
+        border-radius: 12px;
+        font-family: var(--font-display);
+        letter-spacing: 0.08em;
+        animation: medal-pop 0.4s ease-out;
+    }
+    .medal-banner[data-medal-tier="gold"] {
+        background: linear-gradient(135deg, rgba(255, 204, 0, 0.15), rgba(255, 204, 0, 0.05));
+        border: 2px solid var(--yellow);
+        color: var(--yellow);
+        box-shadow: 0 0 30px rgba(255, 204, 0, 0.3);
+    }
+    .medal-banner[data-medal-tier="silver"] {
+        background: linear-gradient(135deg, rgba(192, 192, 192, 0.15), rgba(192, 192, 192, 0.05));
+        border: 2px solid #c0c0c0;
+        color: #d0d0d0;
+        box-shadow: 0 0 30px rgba(192, 192, 192, 0.3);
+    }
+    .medal-banner[data-medal-tier="bronze"] {
+        background: linear-gradient(135deg, rgba(205, 127, 50, 0.15), rgba(205, 127, 50, 0.05));
+        border: 2px solid #cd7f32;
+        color: #e0a060;
+        box-shadow: 0 0 30px rgba(205, 127, 50, 0.3);
+    }
+    .medal-banner__icon { font-size: 1.5rem; }
+    .medal-banner__text { font-size: 0.85rem; }
+    @keyframes medal-pop {
+        0% { transform: scale(0.85); opacity: 0; }
+        60% { transform: scale(1.05); opacity: 1; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
+    .output-row {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .output-row__head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+    }
+    .output-row__sub {
+        font-size: 0.7rem;
+    }
+    .output-row__sub code {
+        font-size: 0.7rem;
+        padding: 1px 6px;
+    }
+    .output-pane {
+        background: #000;
+        border: 2px solid var(--text-dim);
+        color: #d0ffd0;
+        font-size: 0.95rem;
+        min-height: 80px;
+        max-height: 300px;
+        overflow-y: auto;
+        line-height: 1.5;
+    }
+    .output-pane.is-running {
+        border-color: var(--yellow);
+        color: var(--yellow);
+    }
+    .output-pane.is-success {
+        border-color: var(--green);
+        color: #d0ffd0;
+    }
+    .output-pane.is-error {
+        border-color: var(--red);
+        color: #ffaaaa;
+    }
+    .output-pane.is-empty {
+        color: var(--text-dim);
+        font-style: italic;
+    }
+    .editor__output {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+    }
+    .editor__output > div {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .editor__output pre {
+        min-height: 100px;
+        font-size: 0.85rem;
+    }
+    @media (max-width: 800px) {
+        .editor__output { grid-template-columns: 1fr; }
+    }
+
+    .award {
+        margin-top: 14px;
+        padding: 24px 18px;
+        text-align: center;
+        background: radial-gradient(ellipse at center, #2a1a00 0%, #110700 80%);
+        border: 3px solid var(--yellow);
+        border-radius: 16px;
+        box-shadow:
+            0 0 30px rgba(255, 204, 0, 0.5),
+            inset 0 0 30px rgba(255, 204, 0, 0.15);
+        animation: award-glow 2.4s ease-in-out infinite alternate;
+    }
+    .award--shown {
+        animation: award-pop 0.5s ease-out, award-glow 2.4s ease-in-out 0.5s infinite alternate;
+    }
+    @keyframes award-pop {
+        0% { transform: scale(0.85); opacity: 0; }
+        60% { transform: scale(1.04); opacity: 1; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes award-glow {
+        0% { box-shadow: 0 0 20px rgba(255, 204, 0, 0.4), inset 0 0 20px rgba(255, 204, 0, 0.12); }
+        100% { box-shadow: 0 0 50px rgba(255, 204, 0, 0.7), inset 0 0 30px rgba(255, 204, 0, 0.2); }
+    }
+    .award__loaf {
+        font-family: var(--font-mono);
+        color: var(--yellow);
+        font-size: 1.5rem;
+        line-height: 1.3;
+        text-shadow: 0 0 18px rgba(255, 204, 0, 0.7);
+        margin-bottom: 14px;
+    }
+    .award__title {
+        font-family: var(--font-display);
+        color: var(--yellow);
+        font-size: 0.95rem;
+        letter-spacing: 0.1em;
+        text-shadow: 0 0 14px rgba(255, 204, 0, 0.6);
+        margin-bottom: 10px;
+    }
+    .award__sub {
+        font-family: var(--font-display);
+        color: var(--magenta-soft);
+        font-size: 0.7rem;
+        letter-spacing: 0.05em;
+        margin-bottom: 8px;
+    }
+    .award__tag {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+    }
+</style>

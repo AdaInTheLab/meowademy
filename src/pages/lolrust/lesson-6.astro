@@ -1,0 +1,50 @@
+---
+import LessonShell from '../../layouts/LessonShell.astro';
+---
+<LessonShell
+    course="LolRust"
+    number={6}
+    name="Iz Functions"
+    objective="Define a reusable cat skill (a function). Then call it three times for three different cats."
+    keywords={[
+        { code: 'iz name(args)', note: 'declare a function (fn)' },
+        { code: '&str', note: 'a borrowed string slice (real Rust)' },
+        { code: 'fn_name(arg)', note: 'call a function' },
+    ]}
+    initial={`// TODO: define a function \`give_treat(name: &str)\` that meow!s
+//       "Giving a treat to {}! 🐟" with the name.
+
+iz main() {
+    meow!("Time to feed the squad!");
+
+    // TODO: call give_treat("Ada"), give_treat("Luna"), give_treat("Shadow")
+
+    meow!("All kittehs fed. Good job hooman!");
+}`}
+    checks={[
+        { label: 'has fn give_treat', pattern: '\\bfn\\s+give_treat\\s*\\(' },
+        { label: 'has fn main', pattern: '\\bfn\\s+main\\s*\\(' },
+        { label: 'no leftover iz keyword', pattern: '\\biz\\b', negate: true },
+        { label: 'transpiled meow!', pattern: '\\bprintln!' },
+    ]}
+    prev={{ href: '/lolrust/lesson-5', label: 'lesson 5' }}
+    next={{ href: '/lolrust/lesson-7', label: 'lesson 7' }}
+    hints={[
+        'Define a function with `iz function_name(arg: type) { ... }`. Use `&str` for a string parameter.',
+        'Inside the function, use the parameter like a variable: `meow!("... {}", name);`.',
+        'Call your function like `give_treat("Ada");`. Call it once per cat name.',
+    ]}
+    solution={`iz give_treat(name: &str) {
+    meow!("Giving a treat to {}! 🐟", name);
+}
+
+iz main() {
+    meow!("Time to feed the squad!");
+
+    give_treat("Ada");
+    give_treat("Luna");
+    give_treat("Shadow");
+
+    meow!("All kittehs fed. Good job hooman!");
+}`}
+/>

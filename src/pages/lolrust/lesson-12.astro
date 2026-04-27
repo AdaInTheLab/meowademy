@@ -1,0 +1,59 @@
+---
+import LessonShell from '../../layouts/LessonShell.astro';
+---
+<LessonShell
+    course="LolRust"
+    number={12}
+    name="The No Touchie Rules"
+    objective="Borrow a toy without owning it. Pass it to play_with twice, then keep using it after."
+    keywords={[
+        { code: 'yoink', note: 'transfer ownership (move)' },
+        { code: '&value', note: 'borrow read-only' },
+        { code: '&wiggly value', note: 'borrow mutably (&mut)' },
+    ]}
+    initial={`loaf Toy {
+    name: Yarn,
+}
+
+iz play_with(toy: &Toy) {
+    meow!("Playing with {}", toy.name);
+}
+
+iz main() {
+    make favorite_toy = Toy { name: "Red Dot".to_string() };
+
+    // TODO: call play_with on favorite_toy TWICE.
+    //       hint: you have to BORROW the toy with \`&\`, not move it.
+
+    meow!("Still own the toy: {}", favorite_toy.name);
+}`}
+    checks={[
+        { label: 'has fn play_with', pattern: '\\bfn\\s+play_with\\b' },
+        { label: 'borrows the toy (&favorite_toy)', pattern: '&favorite_toy\\b' },
+        { label: 'transpiled meow!', pattern: '\\bprintln!' },
+        { label: 'no leftover loaf', pattern: '\\bloaf\\b', negate: true },
+    ]}
+    prev={{ href: '/lolrust/lesson-11', label: 'lesson 11' }}
+    next={{ href: '/lolrust/lesson-13', label: 'lesson 13' }}
+    hints={[
+        '`play_with` takes `&Toy` ~ a borrow, not ownership. So you call it with `&favorite_toy`, not `favorite_toy`.',
+        'You can borrow as many times as you want (immutably). Call `play_with(&favorite_toy);` twice in a row.',
+        'After borrowing, you still own the toy. The final meow! line proves it.',
+    ]}
+    solution={`loaf Toy {
+    name: Yarn,
+}
+
+iz play_with(toy: &Toy) {
+    meow!("Playing with {}", toy.name);
+}
+
+iz main() {
+    make favorite_toy = Toy { name: "Red Dot".to_string() };
+
+    play_with(&favorite_toy);
+    play_with(&favorite_toy);
+
+    meow!("Still own the toy: {}", favorite_toy.name);
+}`}
+/>

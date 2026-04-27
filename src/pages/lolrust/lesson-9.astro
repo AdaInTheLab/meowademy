@@ -1,0 +1,62 @@
+---
+import LessonShell from '../../layouts/LessonShell.astro';
+---
+<LessonShell
+    course="LolRust"
+    number={9}
+    name="Skritch Dat Mastery"
+    objective="Match exact values, ranges, and a wildcard. Become a pattern-matching ninja."
+    keywords={[
+        { code: '0 => ...', note: 'match exact value' },
+        { code: '1..=5 => ...', note: 'match an inclusive range' },
+        { code: '_ => ...', note: 'wildcard (matches anything)' },
+    ]}
+    initial={`iz judge_zoomies(level: i32) {
+    skritch dat level {
+        0 => meow!("Absolute loaf behavior..."),
+        // TODO: add arms for ranges 1..=3 (Casual zoomies. Cute.),
+        //                          4..=7 (Respectable zoomies!),
+        //                          8..=9 (EXCELLENT ZOOMIES!!!),
+        //                          10    (THIS CAT IS UNSTOPPABLE!!!),
+        //                          _     (Wait... how many zoomies is that???)
+    }
+}
+
+iz main() {
+    judge_zoomies(6);
+    judge_zoomies(9);
+    judge_zoomies(10);
+    judge_zoomies(-1);
+}`}
+    checks={[
+        { label: 'has fn judge_zoomies', pattern: '\\bfn\\s+judge_zoomies\\b' },
+        { label: 'has match', pattern: '\\bmatch\\b' },
+        { label: 'has range pattern', pattern: '\\d+\\.\\.=\\d+' },
+        { label: 'has wildcard arm', pattern: '_\\s*=>' },
+        { label: 'no leftover skritch dat', pattern: '\\bskritch\\s+dat\\b', negate: true },
+    ]}
+    prev={{ href: '/lolrust/lesson-8', label: 'lesson 8' }}
+    next={{ href: '/lolrust/lesson-10', label: 'lesson 10' }}
+    hints={[
+        'Range arms use `..=` (inclusive). So `1..=3 => meow!("..."),` matches 1, 2, OR 3.',
+        'Each arm ends with a comma. The wildcard `_` catches anything not matched above ~ put it last.',
+        'Negative numbers fall through to `_` since the explicit arms only cover 0 through 10.',
+    ]}
+    solution={`iz judge_zoomies(level: i32) {
+    skritch dat level {
+        0 => meow!("Absolute loaf behavior..."),
+        1..=3 => meow!("Casual zoomies. Cute."),
+        4..=7 => meow!("Respectable zoomies!"),
+        8..=9 => meow!("EXCELLENT ZOOMIES!!!"),
+        10 => meow!("THIS CAT IS UNSTOPPABLE!!!"),
+        _ => meow!("Wait... how many zoomies is that???"),
+    }
+}
+
+iz main() {
+    judge_zoomies(6);
+    judge_zoomies(9);
+    judge_zoomies(10);
+    judge_zoomies(-1);
+}`}
+/>

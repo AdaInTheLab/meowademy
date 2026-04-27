@@ -1,0 +1,41 @@
+---
+import LessonShell from '../../layouts/LessonShell.astro';
+---
+<LessonShell
+    course="LolRust"
+    number={2}
+    name="Making Variables"
+    objective="Create three variables and use them in a meow! ~ name, age, and a wiggly zoomies counter."
+    keywords={[
+        { code: 'make', note: 'create a variable (let)' },
+        { code: 'make wiggly', note: 'create a changeable variable (let mut)' },
+        { code: 'meow!("...{}...", x)', note: 'print with placeholders' },
+    ]}
+    initial={`iz main() {
+    // TODO 1: make a variable named \`name\` set to "Ada"
+    // TODO 2: make a variable named \`age\` set to 25
+    // TODO 3: make a WIGGLY variable named \`zoomies\` set to 9000
+
+    meow!("hai fren! i am {} and i have {} zoomies!", name, zoomies);
+}`}
+    checks={[
+        { label: 'has let binding', pattern: '\\blet\\s+\\w+\\s*=' },
+        { label: 'has let mut for wiggly', pattern: '\\blet\\s+mut\\s+\\w+' },
+        { label: 'transpiled meow!', pattern: '\\bprintln!' },
+        { label: 'no leftover make keywords', pattern: '\\bmake\\b', negate: true },
+    ]}
+    prev={{ href: '/lolrust/lesson-1', label: 'lesson 1' }}
+    next={{ href: '/lolrust/lesson-3', label: 'lesson 3' }}
+    hints={[
+        'Use `make name = ...;` to declare a normal variable.',
+        '`zoomies` needs to be wiggly because it can change. Use `make wiggly`.',
+        'Strings need quotes: `make name = "Ada";`. Numbers don\'t: `make age = 25;`.',
+    ]}
+    solution={`iz main() {
+    make name = "Ada";
+    make age = 25;
+    make wiggly zoomies = 9000;
+
+    meow!("hai fren! i am {} and i have {} zoomies!", name, zoomies);
+}`}
+/>

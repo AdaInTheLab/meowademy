@@ -1,0 +1,89 @@
+---
+import LessonShell from '../../layouts/LessonShell.astro';
+
+const installSnippet = `cargo install lolrust
+lolrust path/to/your.meow --run`;
+---
+<LessonShell
+    course="LolRust"
+    number={16}
+    name="Final Project ~ FizzBuzz"
+    objective="Combine everything you learned. Print numbers 1-100, but for multiples of 3 print 'Fizz', for 5 print 'Buzz', for both print 'FizzBuzz'."
+    keywords={[
+        { code: 'chase n around 1..=100', note: 'iterate a range (for n in 1..=100)' },
+        { code: 'if ceiling cat sez', note: 'classic if (also: when works)' },
+        { code: 'or if ceiling cat sez', note: 'else if' },
+        { code: 'or basement cat sez', note: 'else (the dark alternative)' },
+        { code: 'n % 5', note: 'modulo ~ remainder when dividing' },
+    ]}
+    initial={`iz main() {
+    // Loop from 1 to 100 (inclusive)
+    chase n around 1..=100 {
+
+        // FizzBuzz: divisible by both 3 AND 5 (so 15)
+        if ceiling cat sez n % 15 == 0 {
+            meow!("FizzBuzz");
+        }
+        // Fizz: divisible by 3
+        or if ceiling cat sez n % 3 == 0 {
+            meow!("Fizz");
+        }
+
+        // TODO 1: add a Buzz case for multiples of 5
+        // hint: the pattern is exactly like Fizz above
+
+        // TODO 2: add an else case that prints just the number
+        // hint: use 'or basement cat sez' and meow!("{}", n)
+
+    }
+}`}
+    checks={[
+        { label: 'has for n in 1..=100', pattern: '\\bfor\\s+n\\s+in\\s+1\\.\\.=100\\b' },
+        { label: 'prints FizzBuzz', pattern: '"FizzBuzz"' },
+        { label: 'prints Fizz', pattern: '"Fizz"' },
+        { label: 'prints Buzz (you added this)', pattern: '"Buzz"' },
+        { label: 'checks % 5 (Buzz case)', pattern: '%\\s*5\\s*==' },
+        { label: 'has else case', pattern: '\\belse\\b' },
+        { label: 'prints the number itself', pattern: 'println!\\s*\\(\\s*"\\{\\}",\\s*n' },
+        { label: 'no leftover lolrust keywords', pattern: '\\b(iz|chase|around|ceiling cat sez|basement cat sez|meow!)\\b', negate: true },
+    ]}
+    prev={{ href: '/lolrust/lesson-15', label: 'lesson 15' }}
+    award="🐱 Master of LolRust 🐱"
+>
+    <div slot="extras" class="capstone-extras">
+        <h3>This is your capstone</h3>
+        <p class="dim">
+            No new keywords ~ this is the test of whether you can <em>combine</em>
+            what you've learned. You're filling in two TODOs to complete a
+            classic FizzBuzz. The No Touchie Checker grades structurally ~
+            it verifies your code prints all four cases (FizzBuzz, Fizz,
+            Buzz, plain numbers) and uses the right control flow.
+        </p>
+        <p class="dim">
+            Get all checks green to earn the <strong style="color: var(--yellow);">🏆 Golden Loaf</strong>.
+        </p>
+
+        <h3>What's next?</h3>
+        <p class="dim">
+            Meowademy runs the transpiler in your browser, but it can't
+            actually <em>execute</em> your Rust ~ for that you need rustc.
+            Install lolrust locally to write programs that take input,
+            read files, and run for real:
+        </p>
+        <pre class="mono install-snippet">{installSnippet}</pre>
+        <p class="dim">
+            Then graduate to the example programs ~ the
+            <a href="https://github.com/AdaInTheLab/lolrust/blob/main/examples/guessing_game.meow">guessing game</a>
+            uses everything you learned plus stdin.
+        </p>
+    </div>
+</LessonShell>
+
+<style>
+    .install-snippet {
+        background: var(--bg-deep);
+        border: 2px solid var(--yellow);
+        font-size: 0.85rem;
+        padding: 14px;
+    }
+</style>

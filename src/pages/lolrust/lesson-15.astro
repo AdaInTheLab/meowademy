@@ -1,0 +1,54 @@
+---
+import LessonShell from '../../layouts/LessonShell.astro';
+---
+<LessonShell
+    course="LolRust"
+    number={15}
+    name="The Ultimate Power (Generics)"
+    objective="Write a magic_box that takes ANY type and returns it. T is whatever the caller wants."
+    keywords={[
+        { code: '<T>', note: 'a generic type parameter (T = any type)' },
+        { code: 'fn name<T>(...)', note: 'function that accepts any type' },
+        { code: '{:?}', note: 'debug-print formatter (works for any Debug type)' },
+    ]}
+    initial={`// TODO: define magic_box<T: std::fmt::Debug>(item: T) -> T
+//       it should meow!("Putting {:?} into the magic box!", item)
+//       then return item
+
+iz main() {
+    make number = magic_box(999);
+    make treat = magic_box("Tuna");
+    make cat = magic_box("Ada the Legend");
+
+    meow!("Box gave back: {}", number);
+    meow!("Box gave back: {}", treat);
+    meow!("Box gave back: {}", cat);
+}`}
+    checks={[
+        { label: 'has fn magic_box with generic', pattern: '\\bfn\\s+magic_box\\s*<T' },
+        { label: 'returns T', pattern: '->\\s*T\\b' },
+        { label: 'transpiled meow!', pattern: '\\bprintln!' },
+        { label: 'no leftover lolrust keywords', pattern: '\\b(iz|make|meow!)\\b', negate: true },
+    ]}
+    prev={{ href: '/lolrust/lesson-14', label: 'lesson 14' }}
+    next={{ href: '/lolrust/lesson-16', label: 'final project' }}
+    hints={[
+        '`iz magic_box<T: std::fmt::Debug>(item: T) -> T { ... }`. The bound says T must support `{:?}` printing.',
+        'Inside, call `meow!("Putting {:?} into the magic box!", item);` ~ note `{:?}` for debug print.',
+        'Last line of the function returns the value. `item` (no semicolon) returns it.',
+    ]}
+    solution={`iz magic_box<T: std::fmt::Debug>(item: T) -> T {
+    meow!("Putting {:?} into the magic box!", item);
+    item
+}
+
+iz main() {
+    make number = magic_box(999);
+    make treat = magic_box("Tuna");
+    make cat = magic_box("Ada the Legend");
+
+    meow!("Box gave back: {}", number);
+    meow!("Box gave back: {}", treat);
+    meow!("Box gave back: {}", cat);
+}`}
+/>

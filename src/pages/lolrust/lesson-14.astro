@@ -1,0 +1,62 @@
+---
+import LessonShell from '../../layouts/LessonShell.astro';
+---
+<LessonShell
+    course="LolRust"
+    number={14}
+    name="How Many Lives Left? (Lifetimes)"
+    objective="Borrow two toys, return whichever has the longer name. The compiler needs to know they all live the same lifetime."
+    keywords={[
+        { code: "'a", note: "a lifetime parameter (pronounced tick a)" },
+        { code: "&'a Toy", note: "a borrowed Toy that lives at least as long as 'a" },
+        { code: "fn name<'a>(...)", note: "function with a lifetime parameter" },
+    ]}
+    initial={`loaf Toy {
+    name: Yarn,
+}
+
+// TODO: define longest_lived<'a>(toy1: &'a Toy, toy2: &'a Toy) -> &'a Toy
+//       when toy1.name.len() > toy2.name.len() { toy1 } otherwise { toy2 }
+
+iz main() {
+    make red_dot = Toy { name: "Red Dot".to_string() };
+    make laser = Toy { name: "Laser Pointer".to_string() };
+
+    make best_toy = longest_lived(&red_dot, &laser);
+
+    meow!("The longest lived toy is: {}", best_toy.name);
+}`}
+    checks={[
+        { label: "has fn longest_lived<'a>", pattern: "\\bfn\\s+longest_lived\\s*<'a>" },
+        { label: "returns &'a Toy", pattern: "->\\s*&'a\\s+Toy" },
+        { label: 'borrows in main', pattern: '&red_dot|&laser' },
+        { label: 'transpiled meow!', pattern: '\\bprintln!' },
+    ]}
+    prev={{ href: '/lolrust/lesson-13', label: 'lesson 13' }}
+    next={{ href: '/lolrust/lesson-15', label: 'lesson 15' }}
+    hints={[
+        "The function signature must declare the lifetime: `iz longest_lived<'a>(toy1: &'a Toy, toy2: &'a Toy) -> &'a Toy`.",
+        "The same `'a` on both args + return tells the compiler they all live equally long.",
+        'Inside, compare with `toy1.name.len() > toy2.name.len()`. Return the winner. No semicolon on the returned expression.',
+    ]}
+    solution={`loaf Toy {
+    name: Yarn,
+}
+
+iz longest_lived<'a>(toy1: &'a Toy, toy2: &'a Toy) -> &'a Toy {
+    when toy1.name.len() > toy2.name.len() {
+        toy1
+    } otherwise {
+        toy2
+    }
+}
+
+iz main() {
+    make red_dot = Toy { name: "Red Dot".to_string() };
+    make laser = Toy { name: "Laser Pointer".to_string() };
+
+    make best_toy = longest_lived(&red_dot, &laser);
+
+    meow!("The longest lived toy is: {}", best_toy.name);
+}`}
+/>

@@ -1,0 +1,54 @@
+---
+import LessonShell from '../../layouts/LessonShell.astro';
+---
+<LessonShell
+    course="LolRust"
+    number={5}
+    name="Repeat While"
+    objective="Loop until the cat is full. Eat treats one at a time, count them, stop at the limit."
+    keywords={[
+        { code: 'repeat while', note: 'loop while a condition holds (while)' },
+        { code: 'nap', note: 'break out of a loop' },
+        { code: 'again', note: 'skip to the next iteration (continue)' },
+    ]}
+    initial={`iz main() {
+    make wiggly treats_eaten = 0;
+    make full = 8;
+
+    // TODO: repeat while treats_eaten < full {
+    //         increment treats_eaten by 1
+    //         meow! the count
+    //         when treats_eaten == 4, meow! a halfway message
+    //       }
+
+    meow!("I AM FULL! {} treats eaten. Time for a nap.", treats_eaten);
+}`}
+    checks={[
+        { label: 'has while', pattern: '\\bwhile\\b' },
+        { label: 'has if (from when)', pattern: '\\bif\\b' },
+        { label: 'no leftover repeat while', pattern: '\\brepeat\\s+while\\b', negate: true },
+        { label: 'transpiled meow!', pattern: '\\bprintln!' },
+    ]}
+    prev={{ href: '/lolrust/lesson-4', label: 'lesson 4' }}
+    next={{ href: '/lolrust/lesson-6', label: 'lesson 6' }}
+    hints={[
+        '`repeat while condition { ... }` runs the body again and again until the condition is false.',
+        'Inside the loop, `treats_eaten = treats_eaten + 1;` increments the counter.',
+        'Use `when treats_eaten == 4 { meow!("..."); }` to print a special message at the halfway point.',
+    ]}
+    solution={`iz main() {
+    make wiggly treats_eaten = 0;
+    make full = 8;
+
+    repeat while treats_eaten < full {
+        treats_eaten = treats_eaten + 1;
+        meow!("Nom nom... ate treat #{}", treats_eaten);
+
+        when treats_eaten == 4 {
+            meow!("Getting full... but I can keep going!");
+        }
+    }
+
+    meow!("I AM FULL! {} treats eaten. Time for a nap.", treats_eaten);
+}`}
+/>

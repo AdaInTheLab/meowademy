@@ -1,0 +1,65 @@
+name: Build & Deploy to VPS
+
+# Run on push to main (and allow manual triggers from the Actions tab).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Only one deploy at a time. If two pushes land back-to-back, cancel the older.
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Run tests (gate the deploy)
+        run: npm test
+
+      - name: Build static site
+        run: npm run build
+
+      - name: Sanity-check the build output
+        run: |
+          test -f dist/index.html || (echo "dist/index.html missing"; exit 1)
+          test -f dist/.htaccess || (echo "dist/.htaccess missing ~ Apache config will not deploy"; exit 1)
+          test -f dist/pkg/lolrust_bg.wasm || (echo "dist/pkg/lolrust_bg.wasm missing ~ editor will be broken"; exit 1)
+          echo "✅ Build looks healthy"
+
+      - name: Setup SSH for deploy
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p ${{ secrets.VPS_PORT || '22' }} -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy via rsync
+        run: |
+          rsync -avz --delete \
+            -e "ssh -p ${{ secrets.VPS_PORT || '22' }} -i ~/.ssh/id_ed25519" \
+            dist/ \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_PATH }}/
+
+      - name: Smoke-test live site
+        run: |
+          sleep 3
+          curl -fsSL -o /dev/null -w "HTTP %{http_code} in %{time_total}s\n" https://${{ secrets.SITE_DOMAIN }}/
+          curl -fsSI https://${{ secrets.SITE_DOMAIN }}/pkg/lolrust_bg.wasm | grep -i "content-type: application/wasm" \
+            || (echo "WASM not served as application/wasm ~ check .htaccess landed"; exit 1)
+          echo "🐾 deploy verified"

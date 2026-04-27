@@ -1,0 +1,61 @@
+---
+import LessonShell from '../../layouts/LessonShell.astro';
+---
+<LessonShell
+    course="LolRust"
+    number={11}
+    name="Tryz, Purrfect & Hairball"
+    objective="Handle when things go wrong, without panicking. Return success or error."
+    keywords={[
+        { code: 'Tryz<T, E>', note: 'Result type ~ either T or E' },
+        { code: 'Purrfect(value)', note: 'success case (Ok)' },
+        { code: 'Hairball(error)', note: 'failure case (Err)' },
+    ]}
+    initial={`// TODO: define open_box(box_name: &str) -> Tryz<Yarn, Yarn>
+//       when box_name == "treats", return Purrfect("Found 5 treats!".to_string())
+//       otherwise, return Hairball("Box is empty... :(".to_string())
+
+iz main() {
+    skritch dat open_box("treats") {
+        Purrfect(treats) => meow!("Success! {}", treats),
+        Hairball(msg) => meow!("OH NOES: {}", msg),
+    }
+
+    skritch dat open_box("socks") {
+        Purrfect(treats) => meow!("Success! {}", treats),
+        Hairball(msg) => meow!("OH NOES: {}", msg),
+    }
+}`}
+    checks={[
+        { label: 'returns Result<String, String>', pattern: 'Result\\s*<\\s*String\\s*,\\s*String\\s*>' },
+        { label: 'has Ok(', pattern: '\\bOk\\s*\\(' },
+        { label: 'has Err(', pattern: '\\bErr\\s*\\(' },
+        { label: 'no leftover Tryz/Purrfect/Hairball', pattern: '\\b(Tryz|Purrfect|Hairball)\\b', negate: true },
+    ]}
+    prev={{ href: '/lolrust/lesson-10', label: 'lesson 10' }}
+    next={{ href: '/lolrust/lesson-12', label: 'lesson 12' }}
+    hints={[
+        'The function signature is `iz open_box(box_name: &str) -> Tryz<Yarn, Yarn>`. Both the success and error cases are Yarns.',
+        'Inside, branch on the box name with `when ... otherwise { ... }`. Each branch returns a Tryz value (no semicolon at the end).',
+        'Use `Purrfect("...".to_string())` for success and `Hairball("...".to_string())` for failure.',
+    ]}
+    solution={`iz open_box(box_name: &str) -> Tryz<Yarn, Yarn> {
+    when box_name == "treats" {
+        Purrfect("Found 5 treats!".to_string())
+    } otherwise {
+        Hairball("Box is empty... :(".to_string())
+    }
+}
+
+iz main() {
+    skritch dat open_box("treats") {
+        Purrfect(treats) => meow!("Success! {}", treats),
+        Hairball(msg) => meow!("OH NOES: {}", msg),
+    }
+
+    skritch dat open_box("socks") {
+        Purrfect(treats) => meow!("Success! {}", treats),
+        Hairball(msg) => meow!("OH NOES: {}", msg),
+    }
+}`}
+/>

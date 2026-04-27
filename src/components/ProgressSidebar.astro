@@ -1,0 +1,337 @@
+---
+// All 16 lessons listed in the sidebar. Display data only ~ no checks here.
+const lessons = [
+    { n: 1,  title: 'Your First Meow' },
+    { n: 2,  title: 'Making Variables' },
+    { n: 3,  title: 'Wiggly Variables' },
+    { n: 4,  title: 'When / Otherwise' },
+    { n: 5,  title: 'Repeat While' },
+    { n: 6,  title: 'Iz Functions' },
+    { n: 7,  title: 'The Loaf' },
+    { n: 8,  title: 'Flavurz' },
+    { n: 9,  title: 'Skritch Dat Mastery' },
+    { n: 10, title: 'Pounce! (Methods)' },
+    { n: 11, title: 'Tryz / Purrfect / Hairball' },
+    { n: 12, title: 'No Touchie Rules' },
+    { n: 13, title: 'Skillz (Traits)' },
+    { n: 14, title: 'Lifetimes' },
+    { n: 15, title: 'Generics' },
+    { n: 16, title: 'Final Project', capstone: true },
+];
+---
+<button id="progress-toggle" class="progress-toggle" aria-label="Open progress sidebar" aria-controls="progress-panel" aria-expanded="false">
+    <span class="progress-toggle__icon">🐾</span>
+    <span class="progress-toggle__label">PROGRESS</span>
+    <span id="progress-toggle-count" class="progress-toggle__count">0/16</span>
+</button>
+
+<aside id="progress-panel" class="progress-panel" aria-hidden="true">
+    <header class="progress-panel__head">
+        <h2 class="progress-panel__title">YOUR PROGRESS</h2>
+        <button id="progress-close" class="progress-panel__close" aria-label="Close progress sidebar">×</button>
+    </header>
+
+    <div class="progress-panel__bar">
+        <div class="progress-panel__bar-track">
+            <div id="progress-bar-fill" class="progress-panel__bar-fill" style="width: 0%"></div>
+        </div>
+        <div id="progress-bar-text" class="progress-panel__bar-text">0 / 16 lessons</div>
+    </div>
+
+    <ul class="progress-list">
+        {lessons.map(l => (
+            <li class="progress-item" data-lesson={l.n}>
+                <a href={`/lolrust/lesson-${l.n}`} class="progress-item__link" data-lesson-link={l.n}>
+                    <span class="progress-item__status" data-status-icon="locked">🔒</span>
+                    <span class="progress-item__num">{String(l.n).padStart(2, '0')}</span>
+                    <span class="progress-item__title">{l.title}{l.capstone ? ' 🏆' : ''}</span>
+                    <span class="progress-item__medal" data-medal-icon></span>
+                </a>
+            </li>
+        ))}
+    </ul>
+
+    <footer class="progress-panel__foot">
+        <button id="progress-reset" class="progress-reset" type="button">RESET PROGRESS</button>
+        <p class="dim progress-panel__note">
+            Saved in this browser. Reset clears completion for all lessons.
+        </p>
+    </footer>
+</aside>
+
+<script>
+    import { getProgress, getCompletedCount, isUnlocked, isCompleted, getMedal, reset, subscribe, TOTAL_LESSONS } from '../scripts/progress.js';
+
+    const MEDAL_ICONS = { gold: '🥇', silver: '🥈', bronze: '🥉' };
+
+    const toggle = document.getElementById('progress-toggle');
+    const panel = document.getElementById('progress-panel');
+    const closeBtn = document.getElementById('progress-close');
+    const resetBtn = document.getElementById('progress-reset');
+    const fill = document.getElementById('progress-bar-fill');
+    const barText = document.getElementById('progress-bar-text');
+    const toggleCount = document.getElementById('progress-toggle-count');
+
+    function setOpen(open) {
+        if (!toggle || !panel) return;
+        panel.classList.toggle('progress-panel--open', open);
+        toggle.setAttribute('aria-expanded', String(open));
+        panel.setAttribute('aria-hidden', String(!open));
+    }
+
+    toggle?.addEventListener('click', () => {
+        const isOpen = panel?.classList.contains('progress-panel--open');
+        setOpen(!isOpen);
+    });
+    closeBtn?.addEventListener('click', () => setOpen(false));
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && panel?.classList.contains('progress-panel--open')) {
+            setOpen(false);
+        }
+    });
+
+    resetBtn?.addEventListener('click', () => {
+        if (confirm('Reset all lesson progress in this browser? Cannot be undone.')) {
+            reset();
+            // After reset, if we're on a now-locked lesson, send back home.
+            const path = window.location.pathname;
+            const m = path.match(/\/lolrust\/lesson-(\d+)/);
+            if (m && Number(m[1]) > 1) {
+                window.location.href = '/lolrust/lesson-1';
+            }
+        }
+    });
+
+    function render() {
+        const done = getCompletedCount();
+        const pct = Math.round((done / TOTAL_LESSONS) * 100);
+        if (fill) fill.style.width = pct + '%';
+        if (barText) barText.textContent = `${done} / ${TOTAL_LESSONS} lessons`;
+        if (toggleCount) toggleCount.textContent = `${done}/${TOTAL_LESSONS}`;
+
+        document.querySelectorAll('[data-lesson]').forEach((li) => {
+            const n = Number(li.getAttribute('data-lesson'));
+            const link = li.querySelector('[data-lesson-link]');
+            const icon = li.querySelector('[data-status-icon]');
+            const medalEl = li.querySelector('[data-medal-icon]');
+            const completed = isCompleted(n);
+            const unlocked = isUnlocked(n);
+            const medal = getMedal(n);
+
+            li.classList.toggle('progress-item--done', completed);
+            li.classList.toggle('progress-item--locked', !unlocked && !completed);
+
+            if (icon) {
+                if (completed) { icon.textContent = '✅'; icon.setAttribute('data-status-icon', 'done'); }
+                else if (unlocked) { icon.textContent = '📍'; icon.setAttribute('data-status-icon', 'current'); }
+                else { icon.textContent = '🔒'; icon.setAttribute('data-status-icon', 'locked'); }
+            }
+
+            if (medalEl) {
+                medalEl.textContent = medal && MEDAL_ICONS[medal] ? MEDAL_ICONS[medal] : '';
+                if (medal) medalEl.setAttribute('title', `${medal[0].toUpperCase()}${medal.slice(1)} medal`);
+            }
+
+            if (link) {
+                if (!unlocked && !completed) {
+                    link.setAttribute('aria-disabled', 'true');
+                    link.addEventListener('click', preventLockedClick);
+                } else {
+                    link.removeAttribute('aria-disabled');
+                    link.removeEventListener('click', preventLockedClick);
+                }
+            }
+        });
+    }
+
+    function preventLockedClick(e) {
+        e.preventDefault();
+    }
+
+    render();
+    subscribe(render);
+</script>
+
+<style>
+    .progress-toggle {
+        position: fixed;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 200;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-display);
+        font-size: 0.6rem;
+        letter-spacing: 0.08em;
+        background: var(--bg-card);
+        color: var(--magenta-soft);
+        border: 2px solid var(--magenta);
+        border-right: none;
+        border-radius: 14px 0 0 14px;
+        padding: 14px 12px;
+        cursor: pointer;
+        box-shadow: -4px 0 24px rgba(255, 0, 255, 0.25);
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+    }
+    .progress-toggle:hover { color: var(--yellow); border-color: var(--yellow); }
+    .progress-toggle__icon { writing-mode: horizontal-tb; font-size: 1rem; }
+    .progress-toggle__label { padding: 8px 0; }
+    .progress-toggle__count {
+        writing-mode: horizontal-tb;
+        background: var(--bg-deep);
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 0.55rem;
+        color: var(--green);
+    }
+
+    .progress-panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        height: 100vh;
+        width: min(380px, 92vw);
+        background: var(--bg-base);
+        border-left: 3px solid var(--magenta);
+        box-shadow: -12px 0 60px rgba(255, 0, 255, 0.25);
+        transform: translateX(100%);
+        transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 250;
+        display: flex;
+        flex-direction: column;
+    }
+    .progress-panel--open { transform: translateX(0); }
+
+    .progress-panel__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 20px;
+        border-bottom: 2px solid var(--magenta);
+    }
+    .progress-panel__title {
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: 0.85rem;
+        color: var(--magenta);
+        text-shadow: 0 0 14px var(--magenta-glow);
+        letter-spacing: 0.08em;
+    }
+    .progress-panel__close {
+        background: transparent;
+        color: var(--magenta-soft);
+        border: 2px solid var(--magenta);
+        border-radius: 999px;
+        width: 36px;
+        height: 36px;
+        font-size: 1.4rem;
+        line-height: 1;
+        padding: 0;
+        cursor: pointer;
+        box-shadow: none;
+        font-family: inherit;
+    }
+    .progress-panel__close:hover { background: var(--magenta); color: white; }
+
+    .progress-panel__bar {
+        padding: 16px 20px;
+        border-bottom: 1px solid rgba(255, 0, 255, 0.2);
+    }
+    .progress-panel__bar-track {
+        height: 12px;
+        background: var(--bg-deep);
+        border: 2px solid var(--magenta);
+        border-radius: 999px;
+        overflow: hidden;
+    }
+    .progress-panel__bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--magenta) 0%, var(--yellow) 100%);
+        transition: width 0.4s ease;
+    }
+    .progress-panel__bar-text {
+        margin-top: 8px;
+        font-family: var(--font-display);
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+    }
+
+    .progress-list {
+        list-style: none;
+        margin: 0;
+        padding: 8px 0;
+        flex: 1;
+        overflow-y: auto;
+    }
+    .progress-item__link {
+        display: grid;
+        grid-template-columns: 28px 36px 1fr auto;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 20px;
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        text-decoration: none;
+        border-left: 3px solid transparent;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+    .progress-item__medal {
+        font-size: 1rem;
+        line-height: 1;
+    }
+    .progress-item__link:hover {
+        background: var(--bg-card);
+        color: var(--text);
+    }
+    .progress-item__num {
+        color: var(--text-dim);
+        font-family: var(--font-display);
+        font-size: 0.6rem;
+    }
+    .progress-item--done .progress-item__link {
+        color: var(--green);
+        border-left-color: var(--green);
+    }
+    .progress-item--done .progress-item__num { color: var(--green); }
+    .progress-item--locked .progress-item__link {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+    .progress-item--locked .progress-item__link:hover { background: transparent; color: var(--text-muted); }
+
+    .progress-panel__foot {
+        padding: 16px 20px;
+        border-top: 2px solid var(--magenta);
+    }
+    .progress-reset {
+        width: 100%;
+        background: transparent;
+        color: var(--red);
+        border: 2px solid var(--red);
+        font-family: var(--font-display);
+        font-size: 0.7rem;
+        padding: 12px 16px;
+        border-radius: 999px;
+        cursor: pointer;
+        box-shadow: none;
+        letter-spacing: 0.08em;
+    }
+    .progress-reset:hover {
+        background: var(--red);
+        color: var(--bg-deep);
+    }
+    .progress-panel__note {
+        margin: 12px 0 0;
+        font-size: 0.7rem;
+        text-align: center;
+    }
+
+    @media (max-width: 600px) {
+        .progress-toggle { font-size: 0.55rem; padding: 10px 8px; }
+    }
+</style>

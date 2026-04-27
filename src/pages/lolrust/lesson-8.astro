@@ -1,0 +1,68 @@
+---
+import LessonShell from '../../layouts/LessonShell.astro';
+---
+<LessonShell
+    course="LolRust"
+    number={8}
+    name="Flavurz (Enums)"
+    objective="Define a Mood type that's one of several flavors. Then write a match arm for each one."
+    keywords={[
+        { code: 'flavurz Name { ... }', note: 'declare an enum (different possible variants)' },
+        { code: 'skritch dat x { ... }', note: 'pattern match on a value' },
+        { code: 'Variant => expr', note: 'one arm of a match' },
+    ]}
+    initial={`flavurz Mood {
+    Happy,
+    Sleepy,
+    Zooming,
+    Hangry,
+    Plotting,
+}
+
+iz main() {
+    make wiggly current_mood = Mood::Zooming;
+
+    meow!("Current mood: Zooming");
+
+    // TODO: skritch dat current_mood and meow! a different message for each Mood:
+    //   Happy => "Purr purr purr~"
+    //   Sleepy => "z z z z..."
+    //   Zooming => "MUST GO FAST!!!"
+    //   Hangry => "FEED ME OR ELSE!!!"
+    //   Plotting => "I am watching you hooman..."
+}`}
+    checks={[
+        { label: 'has enum Mood', pattern: '\\benum\\s+Mood\\b' },
+        { label: 'has match', pattern: '\\bmatch\\b' },
+        { label: 'no leftover flavurz', pattern: '\\bflavurz\\b', negate: true },
+        { label: 'no leftover skritch dat', pattern: '\\bskritch\\s+dat\\b', negate: true },
+    ]}
+    prev={{ href: '/lolrust/lesson-7', label: 'lesson 7' }}
+    next={{ href: '/lolrust/lesson-9', label: 'lesson 9' }}
+    hints={[
+        '`skritch dat current_mood { ... }` opens a match. Each arm has the shape `Mood::Variant => expression,`.',
+        'You need one arm per Mood variant. Match must be exhaustive ~ if you miss one, the No Touchie Checker will complain.',
+        'Each arm calls `meow!("...")` and ends with a comma: `Mood::Happy => meow!("Purr purr purr~"),`.',
+    ]}
+    solution={`flavurz Mood {
+    Happy,
+    Sleepy,
+    Zooming,
+    Hangry,
+    Plotting,
+}
+
+iz main() {
+    make wiggly current_mood = Mood::Zooming;
+
+    meow!("Current mood: Zooming");
+
+    skritch dat current_mood {
+        Mood::Happy => meow!("Purr purr purr~"),
+        Mood::Sleepy => meow!("z z z z..."),
+        Mood::Zooming => meow!("MUST GO FAST!!!"),
+        Mood::Hangry => meow!("FEED ME OR ELSE!!!"),
+        Mood::Plotting => meow!("I am watching you hooman..."),
+    }
+}`}
+/>

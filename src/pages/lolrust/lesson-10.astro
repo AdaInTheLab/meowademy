@@ -1,0 +1,88 @@
+---
+import LessonShell from '../../layouts/LessonShell.astro';
+---
+<LessonShell
+    course="LolRust"
+    number={10}
+    name="Pounce! (Methods)"
+    objective="Give your Cat loaf methods. A constructor, a mutating method, and a read-only one."
+    keywords={[
+        { code: 'pounce LoafName { ... }', note: 'implement methods on a struct (impl block)' },
+        { code: '&dis', note: 'borrow self (read-only)' },
+        { code: '&wiggly dis', note: 'borrow self mutably (&mut self)' },
+    ]}
+    initial={`loaf Cat {
+    name: Yarn,
+    zoomies: i32,
+}
+
+pounce Cat {
+    iz new(name: &str) -> Cat {
+        Cat {
+            name: name.to_string(),
+            zoomies: 5000,
+        }
+    }
+
+    // TODO 1: define do_zoomies(&wiggly dis, amount: i32)
+    //         that adds \`amount\` to dis.zoomies and meow!s "{} did {} zoomies!"
+
+    // TODO 2: define status(&dis)
+    //         that meow!s "{} currently has {} zoomies"
+}
+
+iz main() {
+    make wiggly ada = Cat::new("Ada");
+    ada.status();
+
+    ada.do_zoomies(8000);
+    ada.do_zoomies(3000);
+    ada.status();
+}`}
+    checks={[
+        { label: 'has impl Cat', pattern: '\\bimpl\\s+Cat\\b' },
+        { label: 'has fn new', pattern: '\\bfn\\s+new\\b' },
+        { label: 'has &self', pattern: '&self\\b' },
+        { label: 'has self.field access', pattern: '\\bself\\.' },
+        { label: 'no leftover pounce', pattern: '\\bpounce\\b', negate: true },
+        { label: 'no leftover dis', pattern: '\\bdis\\b', negate: true },
+    ]}
+    prev={{ href: '/lolrust/lesson-9', label: 'lesson 9' }}
+    next={{ href: '/lolrust/lesson-11', label: 'lesson 11' }}
+    hints={[
+        'Methods that modify the struct take `&wiggly dis` (transpiles to `&mut self`). Read-only methods take `&dis`.',
+        'Inside a method, access fields with `dis.zoomies`, `dis.name`, etc.',
+        'do_zoomies adds to the counter: `dis.zoomies = dis.zoomies + amount;`. status just reads and prints.',
+    ]}
+    solution={`loaf Cat {
+    name: Yarn,
+    zoomies: i32,
+}
+
+pounce Cat {
+    iz new(name: &str) -> Cat {
+        Cat {
+            name: name.to_string(),
+            zoomies: 5000,
+        }
+    }
+
+    iz do_zoomies(&wiggly dis, amount: i32) {
+        dis.zoomies = dis.zoomies + amount;
+        meow!("{} did {} zoomies!", dis.name, amount);
+    }
+
+    iz status(&dis) {
+        meow!("{} currently has {} zoomies", dis.name, dis.zoomies);
+    }
+}
+
+iz main() {
+    make wiggly ada = Cat::new("Ada");
+    ada.status();
+
+    ada.do_zoomies(8000);
+    ada.do_zoomies(3000);
+    ada.status();
+}`}
+/>

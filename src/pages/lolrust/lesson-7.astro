@@ -1,0 +1,66 @@
+---
+import LessonShell from '../../layouts/LessonShell.astro';
+---
+<LessonShell
+    course="LolRust"
+    number={7}
+    name="The Loaf (Structs)"
+    objective="Build a custom Cat type with named fields. Then create one and update one of its fields."
+    keywords={[
+        { code: 'loaf Name { ... }', note: 'declare a struct' },
+        { code: 'Yarn', note: 'String type (cats love yarn)' },
+        { code: '.field', note: 'access a struct field' },
+    ]}
+    initial={`loaf Cat {
+    name: Yarn,
+    age: i32,
+    zoomies: i32,
+}
+
+iz main() {
+    // TODO 1: make a wiggly Cat instance \`my_cat\` with name "Ada", age 25, zoomies 9000
+    //         (use Cat { name: "Ada".to_string(), age: 25, zoomies: 9000 })
+
+    meow!("My cat's name is {}", my_cat.name);
+    meow!("Age: {} years old", my_cat.age);
+    meow!("Zoomies level: {}", my_cat.zoomies);
+
+    // TODO 2: increase my_cat.zoomies by 5000
+
+    meow!("After coffee... zoomies are now {}", my_cat.zoomies);
+}`}
+    checks={[
+        { label: 'has struct Cat', pattern: '\\bstruct\\s+Cat\\b' },
+        { label: 'has String type', pattern: '\\bString\\b' },
+        { label: 'has let mut my_cat', pattern: '\\blet\\s+mut\\s+my_cat\\b' },
+        { label: 'no leftover loaf', pattern: '\\bloaf\\b', negate: true },
+        { label: 'no leftover Yarn', pattern: '\\bYarn\\b', negate: true },
+    ]}
+    prev={{ href: '/lolrust/lesson-6', label: 'lesson 6' }}
+    next={{ href: '/lolrust/lesson-8', label: 'lesson 8' }}
+    hints={[
+        'Instantiate a struct with `Cat { field: value, ... }`. The fields must match the loaf definition.',
+        '`name` is a Yarn so use `"Ada".to_string()` to convert the string slice. Use `make wiggly` so you can mutate later.',
+        'Mutate a field with `my_cat.zoomies = my_cat.zoomies + 5000;`.',
+    ]}
+    solution={`loaf Cat {
+    name: Yarn,
+    age: i32,
+    zoomies: i32,
+}
+
+iz main() {
+    make wiggly my_cat = Cat {
+        name: "Ada".to_string(),
+        age: 25,
+        zoomies: 9000,
+    };
+
+    meow!("My cat's name is {}", my_cat.name);
+    meow!("Age: {} years old", my_cat.age);
+    meow!("Zoomies level: {}", my_cat.zoomies);
+
+    my_cat.zoomies = my_cat.zoomies + 5000;
+    meow!("After coffee... zoomies are now {}", my_cat.zoomies);
+}`}
+/>

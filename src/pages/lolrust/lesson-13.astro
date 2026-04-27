@@ -1,0 +1,109 @@
+---
+import LessonShell from '../../layouts/LessonShell.astro';
+---
+<LessonShell
+    course="LolRust"
+    number={13}
+    name="Skillz (Traits)"
+    objective="Define a Zoomable skill that both Cat and Dog can learn. Then write a generic function that calls it on either."
+    keywords={[
+        { code: 'skillz Name { ... }', note: 'declare a trait (set of behaviors)' },
+        { code: 'pounce Name for Loaf', note: 'implement a trait for a struct (impl Name for Loaf)' },
+        { code: '<T: Skill>', note: 'generic with a trait bound' },
+    ]}
+    initial={`skillz Zoomable {
+    iz do_zoom(&dis);
+    iz get_speed(&dis) -> i32;
+}
+
+loaf Cat {
+    name: Yarn,
+    speed: i32,
+}
+
+pounce Zoomable for Cat {
+    iz do_zoom(&dis) {
+        meow!("{} is zooming at {} zoomies per second!", dis.name, dis.speed);
+    }
+    iz get_speed(&dis) -> i32 {
+        dis.speed
+    }
+}
+
+loaf Dog {
+    name: Yarn,
+    speed: i32,
+}
+
+// TODO 1: implement Zoomable for Dog
+//         do_zoom should meow!("BORK BORK {} is running at {}!!", dis.name, dis.speed)
+//         get_speed should return dis.speed
+
+// TODO 2: define iz make_fast<T: Zoomable>(animal: &T) that calls animal.do_zoom()
+
+iz main() {
+    make ada = Cat { name: "Ada".to_string(), speed: 9000 };
+    make max = Dog { name: "Max".to_string(), speed: 12000 };
+
+    make_fast(&ada);
+    make_fast(&max);
+}`}
+    checks={[
+        { label: 'has trait Zoomable', pattern: '\\btrait\\s+Zoomable\\b' },
+        { label: 'has impl Zoomable for Cat', pattern: '\\bimpl\\s+Zoomable\\s+for\\s+Cat\\b' },
+        { label: 'has impl Zoomable for Dog', pattern: '\\bimpl\\s+Zoomable\\s+for\\s+Dog\\b' },
+        { label: 'has generic with trait bound', pattern: '<T:\\s*Zoomable>' },
+        { label: 'no leftover skillz/pounce/dis', pattern: '\\b(skillz|pounce|dis)\\b', negate: true },
+    ]}
+    prev={{ href: '/lolrust/lesson-12', label: 'lesson 12' }}
+    next={{ href: '/lolrust/lesson-14', label: 'lesson 14' }}
+    hints={[
+        'Mirror the Cat impl for Dog. Just change "zooming" to BORK BORK in the meow! string.',
+        'A generic function: `iz make_fast<T: Zoomable>(animal: &T) { animal.do_zoom(); }`. The bound `T: Zoomable` says T must implement the trait.',
+        'Inside make_fast you can call any method from the Zoomable trait on `animal`.',
+    ]}
+    solution={`skillz Zoomable {
+    iz do_zoom(&dis);
+    iz get_speed(&dis) -> i32;
+}
+
+loaf Cat {
+    name: Yarn,
+    speed: i32,
+}
+
+pounce Zoomable for Cat {
+    iz do_zoom(&dis) {
+        meow!("{} is zooming at {} zoomies per second!", dis.name, dis.speed);
+    }
+    iz get_speed(&dis) -> i32 {
+        dis.speed
+    }
+}
+
+loaf Dog {
+    name: Yarn,
+    speed: i32,
+}
+
+pounce Zoomable for Dog {
+    iz do_zoom(&dis) {
+        meow!("BORK BORK {} is running at {}!!", dis.name, dis.speed);
+    }
+    iz get_speed(&dis) -> i32 {
+        dis.speed
+    }
+}
+
+iz make_fast<T: Zoomable>(animal: &T) {
+    animal.do_zoom();
+}
+
+iz main() {
+    make ada = Cat { name: "Ada".to_string(), speed: 9000 };
+    make max = Dog { name: "Max".to_string(), speed: 12000 };
+
+    make_fast(&ada);
+    make_fast(&max);
+}`}
+/>

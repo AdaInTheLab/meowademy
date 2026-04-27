@@ -1,0 +1,83 @@
+# === Meowademy .htaccess ===
+# Apache config for the Dreamhost VPS.
+# Lives in public/, so `astro build` copies it to dist/ ~ deploy with the rest.
+# Drop the contents of dist/ into your document root.
+#
+# Prerequisites (do these in the Dreamhost panel / on the VPS):
+#   1. Let's Encrypt cert installed for meowademy.com (HTTPS works)
+#   2. mod_rewrite, mod_headers, mod_expires, mod_deflate enabled in Apache
+#   3. ServerTokens Prod set in main apache2.conf (can't be set in .htaccess)
+
+# --- WASM MIME type (REQUIRED for the editor to work) ---
+AddType application/wasm .wasm
+
+# --- Disable PHP entirely (Meowademy doesn't use it) ---
+RemoveHandler .php .phtml .phps
+RemoveType .php .phtml .phps
+<FilesMatch "\.(php|phtml|phps)$">
+    Require all denied
+</FilesMatch>
+
+# --- Disable directory listing + symlink restrictions ---
+Options -Indexes -MultiViews +FollowSymLinks
+
+# --- Hide Apache details (ServerTokens must be in main config) ---
+ServerSignature Off
+
+# --- Force HTTPS (only enable AFTER cert is working) ---
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+# --- Security headers ---
+<IfModule mod_headers.c>
+    # HSTS ~ enable AFTER HTTPS is reliably working. Browsers cache this.
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+    # Don't let browsers MIME-sniff
+    Header always set X-Content-Type-Options "nosniff"
+
+    # Stop iframe embedding (clickjacking prevention)
+    Header always set X-Frame-Options "DENY"
+
+    # Restrict referrer leakage
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Opt out of FLoC and similar tracking signals
+    Header always set Permissions-Policy "interest-cohort=()"
+
+    # Block service worker registration (we don't use them; defends against
+    # console-pasted scripts trying to install persistent malware).
+    Header always set Service-Worker-Allowed "/dev/null"
+
+    # Content Security Policy.
+    # 'unsafe-inline' is needed for Astro's is:inline scripts and component
+    # styles. 'wasm-unsafe-eval' is needed to run our lolrust transpiler.
+    # connect-src allows fetch to play.rust-lang.org for real Rust execution.
+    # worker-src 'none' + frame-ancestors 'none' + base-uri 'self' close the
+    # remaining attacker holes (service workers, iframe phishing, base-href
+    # manipulation).
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://play.rust-lang.org; img-src 'self' data:; worker-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';"
+</IfModule>
+
+# --- Cache static assets aggressively (WASM, JS, CSS, fonts) ---
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType application/wasm "access plus 1 year"
+    ExpiresByType text/javascript "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    # HTML re-checked every visit so lesson updates show up
+    ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+# --- Compress text formats (WASM is already compressed, don't re-gzip) ---
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript text/plain application/json image/svg+xml
+</IfModule>
+
+# --- 404 fallback (optional ~ point at a custom page if you make one) ---
+# ErrorDocument 404 /404.html
